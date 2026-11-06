@@ -6,6 +6,7 @@ import Employees from './pages/admin/Employees';
 import Justifications from './pages/admin/Justifications';
 import Reports from './pages/admin/Reports';
 import Shifts from './pages/admin/Shifts';
+import Users from './pages/admin/Users';
 import EmployeeHistory from './pages/employee/EmployeeHistory';
 import EmployeeHome from './pages/employee/EmployeeHome';
 import EmployeeLayout from './pages/employee/EmployeeLayout';
@@ -40,6 +41,14 @@ export default function App() {
         <Route path="turnos" element={<Shifts />} />
         <Route path="justificaciones" element={<Justifications />} />
         <Route path="reportes" element={<Reports />} />
+        <Route
+          path="usuarios"
+          element={
+            <RequireRole roles={['ADMIN']}>
+              <Users />
+            </RequireRole>
+          }
+        />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -13,6 +13,8 @@ interface AuthState {
   error: unknown;
   retry: () => void;
   login: (email: string, password: string) => Promise<Me>;
+  /** Crea el primer administrador (configuración inicial) e inicia su sesión. */
+  setupAdmin: (data: { email: string; password: string; siteName?: string; code?: string }) => Promise<Me>;
   logout: () => void;
 }
 
@@ -46,9 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => setUnauthorizedHandler(null);
   }, [logout, toast]);
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const res = await api.post<LoginResponse>('/auth/login', { email, password });
+  const adoptSession = useCallback(
+    (res: LoginResponse) => {
       tokenStore.set(res.accessToken);
       qc.clear();
       qc.setQueryData(qk.me, res.user);
@@ -56,6 +57,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return res.user;
     },
     [qc],
+  );
+
+  const login = useCallback(
+    async (email: string, password: string) => adoptSession(await api.post<LoginResponse>('/auth/login', { email, password })),
+    [adoptSession],
+  );
+
+  const setupAdmin = useCallback(
+    async (data: { email: string; password: string; siteName?: string; code?: string }) =>
+      adoptSession(await api.post<LoginResponse>('/auth/setup', data)),
+    [adoptSession],
   );
 
   const { data: me, isPending, fetchStatus, error: meError, refetch } = meQuery;
@@ -67,9 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       error: token && !me ? meError : null,
       retry: () => void refetch(),
       login,
+      setupAdmin,
       logout,
     }),
-    [token, me, isPending, fetchStatus, meError, refetch, login, logout],
+    [token, me, isPending, fetchStatus, meError, refetch, login, setupAdmin, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

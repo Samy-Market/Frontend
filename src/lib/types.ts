@@ -188,3 +188,17 @@ export interface AttendanceReport {
   totals: ReportTotals & { employees: number };
   employees: EmployeeReport[];
 }
+
+export interface SetupStatus {
+  needsSetup: boolean;
+  requiresCode: boolean;
+}
+
+export interface StaffUser {
+  id: string;
+  email: string;
+  role: 'ADMIN' | 'SUPERVISOR';
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

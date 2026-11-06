@@ -23,5 +23,6 @@ export const qk = {
   employees: (params: Record<string, string>) => ['employees', params] as const,
   employeesAll: ['employees'] as const,
   shifts: ['shifts'] as const,
+  staffUsers: ['users'] as const,
   report: (params: Record<string, string>) => ['reports', params] as const,
 };

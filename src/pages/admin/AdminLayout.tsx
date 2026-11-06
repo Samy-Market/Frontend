@@ -10,6 +10,7 @@ const nav = [
   { to: '/admin/turnos', label: 'Turnos', icon: 'M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z' },
   { to: '/admin/justificaciones', label: 'Justificaciones', badge: true, icon: 'M9 12h6m-6 4h6M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z' },
   { to: '/admin/reportes', label: 'Reportes', icon: 'M4 19V5m0 14h16M8 15v-4m4 4V8m4 7v-6' },
+  { to: '/admin/usuarios', label: 'Usuarios', adminOnly: true, icon: 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 10v-1a7 7 0 0 1 14 0v1M19 8v6m3-3h-6' },
 ];
 
 const roleLabel = { ADMIN: 'Administrador', SUPERVISOR: 'Supervisor', EMPLOYEE: 'Empleado' } as const;
@@ -29,7 +30,7 @@ export default function AdminLayout() {
         </div>
         <nav aria-label="Administración" className="overflow-x-auto px-2 pb-2 lg:flex-1 lg:pb-0">
           <ul className="flex gap-1 lg:flex-col">
-            {nav.map((n) => (
+            {nav.filter((n) => !('adminOnly' in n) || user?.role === 'ADMIN').map((n) => (
               <li key={n.to}>
                 <NavLink
                   to={n.to}

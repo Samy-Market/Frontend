@@ -19,7 +19,8 @@ cp .env.example .env     # VITE_API_URL=http://localhost:3000
 npm run dev              # http://localhost:5173
 ```
 
-Las credenciales de prueba están en el README del backend. Por ejemplo, `admin@empresa.com` / `Admin123*` o `ana.torres@empresa.com` / `Empleado123*`.
+- **Base con el seed:** las credenciales de prueba están en el README del backend, por ejemplo `admin@empresa.com` / `Admin123*`.
+- **Base vacía:** la pantalla de login muestra **"Configuración inicial"** para crear el primer administrador.
 
 > La sesión se guarda en `localStorage`, que comparten todas las pestañas del mismo navegador. Para ver al empleado y al supervisor al mismo tiempo, usa una ventana de incógnito u otro navegador.
 
@@ -81,7 +82,8 @@ src/
   components/      UI accesible (modal con <dialog>, avisos, badges)
   hooks/           consultas y mutaciones (empleado y admin)
   pages/employee/  Marcar · Historial · Solicitudes   (pensado para el celular)
-  pages/admin/     Dashboard · Empleados · Turnos · Justificaciones · Reportes   (escritorio)
+  pages/admin/     Dashboard · Empleados · Turnos · Justificaciones · Reportes · Usuarios   (escritorio)
+  pages/InitialSetup.tsx   formulario para crear el primer admin
 public/            íconos de la PWA
 Dockerfile         build de Vite + nginx para producción
 nginx.conf.template  sirve la SPA en el PORT que asigne la plataforma

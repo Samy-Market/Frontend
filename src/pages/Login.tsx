@@ -1,8 +1,11 @@
+import { useQuery } from '@tanstack/react-query';
 import { FormEvent, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { homeFor, isAdminRole, useAuth } from '@/auth/AuthContext';
-import { Button, Field, inputClass } from '@/components/ui';
-import { errorMessage } from '@/lib/api';
+import { Button, Field, FullScreenSpinner, inputClass } from '@/components/ui';
+import { api, errorMessage } from '@/lib/api';
+import type { SetupStatus } from '@/lib/types';
+import InitialSetup from './InitialSetup';
 
 export default function Login() {
   const { login, user } = useAuth();
@@ -13,7 +16,19 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // ¿El sistema todavía no tiene administrador? Entonces se muestra la configuración inicial.
+  const setupQ = useQuery({
+    queryKey: ['auth', 'setup'],
+    queryFn: () => api.get<SetupStatus>('/auth/setup'),
+    enabled: !user,
+    staleTime: 0,
+  });
+
   if (user) return <Navigate to={homeFor(user.role)} replace />;
+  if (setupQ.isPending) return <FullScreenSpinner />;
+  if (setupQ.data?.needsSetup) {
+    return <InitialSetup requiresCode={setupQ.data.requiresCode} onAlreadyConfigured={() => setupQ.refetch()} />;
+  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();

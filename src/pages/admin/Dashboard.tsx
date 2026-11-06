@@ -113,7 +113,12 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {items.length === 0 ? (
+          {data.items.length === 0 ? (
+            <EmptyState
+              title="Aún no hay empleados registrados"
+              description="Primeros pasos: 1) crea los turnos en “Turnos”, 2) registra a tu personal en “Empleados”. Cada empleado entra con su correo y marca desde su celular."
+            />
+          ) : items.length === 0 ? (
             <EmptyState title="No hay empleados con este filtro" />
           ) : (
             <TableCard>

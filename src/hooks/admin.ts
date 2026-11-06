@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { qk } from '@/lib/queryClient';
-import type { AttendanceReport, Employee, Justification, JustificationStatus, Shift, TodayResponse } from '@/lib/types';
+import type { AttendanceReport, Employee, Justification, JustificationStatus, Shift, StaffUser, TodayResponse } from '@/lib/types';
 
 export const useToday = () =>
   useQuery({
@@ -88,3 +88,21 @@ export const useAttendanceReport = (params: { from: string; to: string; employee
     placeholderData: (prev) => prev,
   });
 };
+
+export const useStaffUsers = () => useQuery({ queryKey: qk.staffUsers, queryFn: () => api.get<StaffUser[]>('/users') });
+
+export interface StaffUserInput {
+  email: string;
+  role: 'ADMIN' | 'SUPERVISOR';
+  active: boolean;
+  password?: string;
+}
+
+export function useSaveStaffUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id?: string; data: Partial<StaffUserInput> }) =>
+      id ? api.patch<StaffUser>(`/users/${id}`, data) : api.post<StaffUser>('/users', data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.staffUsers }),
+  });
+}
