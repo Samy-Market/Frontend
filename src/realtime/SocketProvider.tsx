@@ -1,20 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { isAdminRole, useAuth } from '@/auth/AuthContext';
-import { useToast } from '@/components/Toaster';
+import { isAdminRole, useAuth } from '@/auth/auth';
+import { useToast } from '@/components/toast';
 import { API_URL } from '@/lib/api';
 import { qk } from '@/lib/queryClient';
 import { formatTime } from '@/lib/time';
 import type { AttendanceMarkedEvent, Justification } from '@/lib/types';
-
-export type ConnectionState = 'connecting' | 'online' | 'offline';
-
-interface SocketCtx {
-  socket: Socket | null;
-  state: ConnectionState;
-}
-const SocketContext = createContext<SocketCtx>({ socket: null, state: 'offline' });
+import { ConnectionState, SocketContext } from './socket';
 
 const statusLabel = { APPROVED: 'aprobada', REJECTED: 'rechazada', PENDING: 'pendiente' } as const;
 
@@ -27,54 +20,64 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const { token, user } = useAuth();
   const qc = useQueryClient();
   const toast = useToast();
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [state, setState] = useState<ConnectionState>('offline');
   const hasConnectedOnce = useRef(false);
 
   const role = user?.role;
   const myEmployeeId = user?.employee?.id;
 
+  // Un socket por sesión; se crea sin conectar y el efecto lo conecta y desconecta.
+  const socket = useMemo<Socket | null>(
+    () =>
+      token
+        ? io(API_URL, {
+            auth: { token },
+            autoConnect: false,
+            transports: ['websocket', 'polling'],
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 10000,
+          })
+        : null,
+    [token],
+  );
+  // El estado guardado pertenece a un socket concreto; si el socket cambió, aún está "conectando".
+  const [status, setStatus] = useState<{ socket: Socket | null; state: ConnectionState }>({ socket: null, state: 'offline' });
+  const state: ConnectionState = !socket ? 'offline' : status.socket === socket ? status.state : 'connecting';
+
   useEffect(() => {
-    if (!token || !role) return;
+    if (!socket || !role) return;
+    const s = socket;
     const admin = isAdminRole(role);
-    const s = io(API_URL, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 10000,
-    });
-    setSocket(s);
-    setState('connecting');
     hasConnectedOnce.current = false;
+    s.connect();
 
     s.on('connect', () => {
-      setState('online');
+      setStatus({ socket: s, state: 'online' });
       // En la reconexión pudimos perder eventos: se resincroniza todo desde la BD.
-      if (hasConnectedOnce.current) qc.invalidateQueries();
+      if (hasConnectedOnce.current) void qc.invalidateQueries();
       hasConnectedOnce.current = true;
     });
-    s.on('disconnect', () => setState('offline'));
-    s.on('connect_error', () => setState('offline'));
+    s.on('disconnect', () => setStatus({ socket: s, state: 'offline' }));
+    s.on('connect_error', () => setStatus({ socket: s, state: 'offline' }));
 
     s.on('attendance:marked', (ev: AttendanceMarkedEvent) => {
       if (admin) {
-        qc.invalidateQueries({ queryKey: qk.today });
-        qc.invalidateQueries({ queryKey: ['reports'] });
+        void qc.invalidateQueries({ queryKey: qk.today });
+        void qc.invalidateQueries({ queryKey: ['reports'] });
       }
       if (ev.employee.id === myEmployeeId) {
         // Marcación hecha desde otro dispositivo del mismo empleado.
         qc.setQueryData(qk.myStatus, ev.status);
-        qc.invalidateQueries({ queryKey: qk.myMonthAll });
+        void qc.invalidateQueries({ queryKey: qk.myMonthAll });
       }
     });
 
     s.on('justification:created', (j: Justification) => {
-      qc.invalidateQueries({ queryKey: qk.justificationsAll });
+      void qc.invalidateQueries({ queryKey: qk.justificationsAll });
       if (admin) toast.info('Nueva justificación', `${j.employee.fullName} solicitó una corrección.`);
     });
 
     s.on('justification:reviewed', (j: Justification) => {
-      qc.invalidateQueries({ queryKey: qk.justificationsAll });
+      void qc.invalidateQueries({ queryKey: qk.justificationsAll });
       const label = statusLabel[j.status];
       const msg = `Tu solicitud sobre la marcación de las ${formatTime(j.attendance.timestamp)} fue ${label}.`;
       const note = j.reviewNote ? ` Nota: “${j.reviewNote}”` : '';
@@ -85,27 +88,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     return () => {
       s.removeAllListeners();
       s.disconnect();
-      setSocket(null);
-      setState('offline');
     };
-  }, [token, role, myEmployeeId, qc, toast]);
+  }, [socket, role, myEmployeeId, qc, toast]);
 
   return <SocketContext.Provider value={{ socket, state }}>{children}</SocketContext.Provider>;
-}
-
-export const useSocket = () => useContext(SocketContext);
-
-/** Suscribe un manejador a un evento del socket mientras el componente está montado. */
-export function useSocketEvent<T>(event: string, handler: (payload: T) => void) {
-  const { socket } = useSocket();
-  const ref = useRef(handler);
-  ref.current = handler;
-  useEffect(() => {
-    if (!socket) return;
-    const fn = (p: T) => ref.current(p);
-    socket.on(event, fn);
-    return () => {
-      socket.off(event, fn);
-    };
-  }, [socket, event]);
 }

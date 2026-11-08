@@ -32,40 +32,47 @@ npm run dev              # http://localhost:5173
 
 ## Scripts
 
-| Comando | Qué hace |
-|---|---|
-| `npm run dev` | Servidor de desarrollo |
-| `npm run build` | Build de producción en `dist/`, con service worker |
-| `npm run preview` | Sirve el build localmente (permite instalar la PWA en `localhost`) |
-| `npm run typecheck` | Revisión de tipos |
-| `npm run generate-pwa-assets` | Regenera los íconos a partir de `public/icon.svg` |
+| Comando                           | Qué hace                                                                           |
+| --------------------------------- | ---------------------------------------------------------------------------------- |
+| `npm run dev`                     | Servidor de desarrollo                                                             |
+| `npm run build`                   | Build de producción en `dist/`, con service worker                                 |
+| `npm run preview`                 | Sirve el build localmente (permite instalar la PWA en `localhost`)                 |
+| `npm run typecheck`               | Revisión de tipos                                                                  |
+| `npm run lint` / `lint:fix`       | Revisa el código con ESLint (TypeScript y reglas de React) / corrige lo automático |
+| `npm run format` / `format:check` | Da formato con Prettier / solo verifica                                            |
+| `npm run generate-pwa-assets`     | Regenera los íconos a partir de `public/icon.svg`                                  |
 
 ## Variables de entorno
 
-| Variable | Uso |
-|---|---|
+| Variable       | Uso                                                                                                                  |
+| -------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `VITE_API_URL` | URL pública del backend (REST y WebSocket). **Se incrusta al hacer el build**: si cambia, hay que volver a construir |
 
 ## Funcionalidades
 
 ### Empleado (vista pensada para el celular)
+
 - **Marcar:** un botón grande que alterna entre "Marcar ingreso" y "Marcar salida". Muestra el estado actual (Dentro, Fuera o Sin marcar), la última marcación, las horas de hoy (que avanzan solas mientras la jornada está abierta) y avisos de atraso.
-- **Historial:** se navega por mes, con el total de horas, los días trabajados, los atrasos y el detalle diario. También marca las jornadas en curso y las que quedaron abiertas.
+- **Historial:** se navega por mes, con el total de horas, los días trabajados, los atrasos, las ausencias y el detalle diario con el turno programado. También marca las jornadas en curso y las que quedaron abiertas.
+- **Mi turno y mi semana:** la pantalla principal muestra el turno de hoy (o si es día de descanso) y el horario de lunes a domingo.
 - **Solicitudes:** desde cualquier marcación se puede pedir una justificación (motivo en texto). Cuando el supervisor la aprueba o la rechaza, el empleado ve un aviso al instante.
 
 ### Administrador / supervisor (vista de escritorio)
+
 - **Dashboard en vivo:** contadores, tabla de estado con atraso y "No ha llegado", y un panel de actividad que se actualiza por WebSocket.
 - **Empleados:** crear, editar y activar o desactivar. Desactivar a un empleado corta su sesión y su conexión en vivo.
-- **Turnos:** hora de entrada, hora de salida y minutos de tolerancia.
+- **Sedes:** locales de la empresa y **traslados** temporales de empleados entre sedes (emergencias u órdenes), con fechas y motivo.
+- **Turnos:** bloques horarios (hora de entrada, salida y tolerancia), por ejemplo "Mañana 08:00–18:00".
+- **Horarios:** plantillas semanales rotativas (qué turno toca cada día o descanso), que se asignan a varios empleados con fecha de inicio y fin (por ejemplo, 3 meses). Avisa de las rotaciones por vencer y muestra el historial de cada empleado.
 - **Justificaciones:** bandeja por estado. Se aprueba o se rechaza con una nota opcional.
 - **Reportes:** rango de fechas (con atajos), filtro por empleado, totales, detalle por día y **exportación a Excel** con 3 hojas: Resumen, Detalle por día y Marcaciones.
 
-| Permiso | ADMIN | SUPERVISOR | EMPLOYEE |
-|---|:-:|:-:|:-:|
-| Marcar y ver lo propio | — | — | ✔ |
-| Dashboard, reportes y bandeja de justificaciones | ✔ | ✔ | — |
-| Ver empleados y turnos | ✔ | ✔ | — |
-| Crear y editar empleados y turnos | ✔ | — | — |
+| Permiso                                                         | ADMIN | SUPERVISOR | EMPLOYEE |
+| --------------------------------------------------------------- | :---: | :--------: | :------: |
+| Marcar y ver lo propio                                          |   —   |     —      |    ✔     |
+| Dashboard, reportes y bandeja de justificaciones                |   ✔   |     ✔      |    —     |
+| Ver empleados, turnos y horarios                                |   ✔   |     ✔      |    —     |
+| Crear y editar empleados, turnos y horarios; asignar rotaciones |   ✔   |     —      |    —     |
 
 ## Cómo se conecta con el backend
 
@@ -82,7 +89,7 @@ src/
   components/      UI accesible (modal con <dialog>, avisos, badges)
   hooks/           consultas y mutaciones (empleado y admin)
   pages/employee/  Marcar · Historial · Solicitudes   (pensado para el celular)
-  pages/admin/     Dashboard · Empleados · Turnos · Justificaciones · Reportes · Usuarios   (escritorio)
+  pages/admin/     Dashboard · Empleados · Turnos · Horarios · Justificaciones · Reportes · Usuarios   (escritorio)
   pages/InitialSetup.tsx   formulario para crear el primer admin
 public/            íconos de la PWA
 Dockerfile         build de Vite + nginx para producción
@@ -93,6 +100,7 @@ railway.json       configuración de despliegue en Railway
 ## Despliegue
 
 Ver la guía en el repositorio del backend: `docs/DEPLOY_RAILWAY.md`. En resumen:
+
 - En Railway, crea un servicio desde este repositorio.
 - Define `VITE_API_URL=https://<dominio-del-backend>`.
 - Genera un dominio público.

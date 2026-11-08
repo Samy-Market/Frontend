@@ -1,7 +1,8 @@
 import { FormEvent, useState } from 'react';
 import { PageHeader } from './AdminLayout';
-import { useToast } from '@/components/Toaster';
-import { Badge, Button, Card, cn, EmptyState, ErrorState, Field, inputClass, justificationLabel, justificationTone, Modal, Spinner } from '@/components/ui';
+import { useToast } from '@/components/toast';
+import { Badge, Button, Card, EmptyState, ErrorState, Field, inputClass, Modal, Spinner } from '@/components/ui';
+import { cn, justificationLabel, justificationTone } from '@/lib/styles';
 import { useJustifications, useReviewJustification } from '@/hooks/admin';
 import { errorMessage } from '@/lib/api';
 import { formatDateTime, formatLate } from '@/lib/time';
@@ -21,7 +22,10 @@ export default function Justifications() {
 
   return (
     <>
-      <PageHeader title="Justificaciones" description="Solicitudes de corrección enviadas por los empleados. Las nuevas aparecen en vivo." />
+      <PageHeader
+        title="Justificaciones"
+        description="Solicitudes de corrección enviadas por los empleados. Las nuevas aparecen en vivo."
+      />
 
       <div role="tablist" aria-label="Filtrar por estado" className="mb-4 inline-flex rounded-xl bg-slate-100 p-1">
         {tabs.map((t) => (
@@ -41,13 +45,18 @@ export default function Justifications() {
       </div>
 
       {list.isPending ? (
-        <div className="flex justify-center py-16 text-brand-700"><Spinner /></div>
+        <div className="flex justify-center py-16 text-brand-700">
+          <Spinner />
+        </div>
       ) : list.isError ? (
         <ErrorState message={errorMessage(list.error)} onRetry={() => list.refetch()} />
       ) : list.data.length === 0 ? (
-        <EmptyState title={status === 'PENDING' ? 'No hay solicitudes pendientes' : 'No hay solicitudes en esta vista'} description={status === 'PENDING' ? '¡Todo al día!' : undefined} />
+        <EmptyState
+          title={status === 'PENDING' ? 'No hay solicitudes pendientes' : 'No hay solicitudes en esta vista'}
+          description={status === 'PENDING' ? '¡Todo al día!' : undefined}
+        />
       ) : (
-        <ul className="grid gap-3 lg:grid-cols-2">
+        <ul className="stagger grid gap-3 lg:grid-cols-2">
           {list.data.map((j) => (
             <li key={j.id}>
               <Card className="flex h-full flex-col">
@@ -68,8 +77,12 @@ export default function Justifications() {
 
                 {j.status === 'PENDING' ? (
                   <div className="mt-4 flex gap-2">
-                    <Button variant="success" size="sm" onClick={() => setReviewing({ j, decision: 'APPROVED' })}>Aprobar</Button>
-                    <Button variant="secondary" size="sm" onClick={() => setReviewing({ j, decision: 'REJECTED' })}>Rechazar</Button>
+                    <Button variant="success" size="sm" onClick={() => setReviewing({ j, decision: 'APPROVED' })}>
+                      Aprobar
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => setReviewing({ j, decision: 'REJECTED' })}>
+                      Rechazar
+                    </Button>
                   </div>
                 ) : (
                   <div className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
@@ -88,13 +101,7 @@ export default function Justifications() {
   );
 }
 
-function ReviewModal({
-  state,
-  onClose,
-}: {
-  state: { j: Justification; decision: 'APPROVED' | 'REJECTED' } | null;
-  onClose: () => void;
-}) {
+function ReviewModal({ state, onClose }: { state: { j: Justification; decision: 'APPROVED' | 'REJECTED' } | null; onClose: () => void }) {
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
   const review = useReviewJustification();
@@ -129,7 +136,9 @@ function ReviewModal({
       title={approve ? 'Aprobar justificación' : 'Rechazar justificación'}
       footer={
         <>
-          <Button variant="secondary" onClick={close}>Cancelar</Button>
+          <Button variant="secondary" onClick={close}>
+            Cancelar
+          </Button>
           <Button type="submit" form="review-form" variant={approve ? 'success' : 'danger'} loading={review.isPending}>
             {approve ? 'Aprobar' : 'Rechazar'}
           </Button>
@@ -139,10 +148,18 @@ function ReviewModal({
       {state && (
         <form id="review-form" onSubmit={submit} className="space-y-4">
           <p className="text-sm text-slate-700">
-            {state.j.employee.fullName} · {state.j.attendance.type === 'IN' ? 'Ingreso' : 'Salida'} del {formatDateTime(state.j.attendance.timestamp)}
+            {state.j.employee.fullName} · {state.j.attendance.type === 'IN' ? 'Ingreso' : 'Salida'} del{' '}
+            {formatDateTime(state.j.attendance.timestamp)}
           </p>
           <Field label="Nota para el empleado (opcional)" htmlFor="review-note" error={error ?? undefined}>
-            <textarea id="review-note" rows={3} maxLength={500} className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
+            <textarea
+              id="review-note"
+              rows={3}
+              maxLength={500}
+              className={inputClass}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
           </Field>
           <p className="text-xs text-slate-500">La decisión queda registrada en la auditoría y el empleado la recibe al instante.</p>
         </form>

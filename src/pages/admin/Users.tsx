@@ -1,8 +1,23 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
+import { formKey } from '@/lib/form';
 import { PageHeader } from './AdminLayout';
-import { useAuth } from '@/auth/AuthContext';
-import { useToast } from '@/components/Toaster';
-import { Badge, Button, cn, EmptyState, ErrorState, Field, inputClass, Modal, Spinner, TableCard, tableClass, tdClass, thClass } from '@/components/ui';
+import { useAuth } from '@/auth/auth';
+import { useToast } from '@/components/toast';
+import {
+  Badge,
+  Button,
+  EmptyState,
+  ErrorState,
+  Field,
+  inputClass,
+  Modal,
+  Spinner,
+  TableCard,
+  tableClass,
+  tdClass,
+  thClass,
+} from '@/components/ui';
+import { cn } from '@/lib/styles';
 import { StaffUserInput, useSaveStaffUser, useStaffUsers } from '@/hooks/admin';
 import { ApiError, errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/time';
@@ -25,18 +40,20 @@ export default function Users() {
       />
 
       <div className="mb-4 grid gap-3 text-sm sm:grid-cols-2">
-        <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200">
+        <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
           <p className="font-medium">Administrador</p>
           <p className="text-slate-600">Todo: empleados, turnos, usuarios, justificaciones y reportes.</p>
         </div>
-        <div className="rounded-xl bg-white p-3 ring-1 ring-slate-200">
+        <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
           <p className="font-medium">Supervisor</p>
           <p className="text-slate-600">Dashboard en vivo, justificaciones y reportes. Ve empleados y turnos sin editarlos.</p>
         </div>
       </div>
 
       {list.isPending ? (
-        <div className="flex justify-center py-16 text-brand-700"><Spinner /></div>
+        <div className="flex justify-center py-16 text-brand-700">
+          <Spinner />
+        </div>
       ) : list.isError ? (
         <ErrorState message={errorMessage(list.error)} onRetry={() => list.refetch()} />
       ) : list.data.length === 0 ? (
@@ -46,11 +63,21 @@ export default function Users() {
           <table className={tableClass}>
             <thead className="bg-slate-50">
               <tr>
-                <th scope="col" className={thClass}>Correo</th>
-                <th scope="col" className={thClass}>Rol</th>
-                <th scope="col" className={thClass}>Estado</th>
-                <th scope="col" className={thClass}>Creado</th>
-                <th scope="col" className={thClass}><span className="sr-only">Acciones</span></th>
+                <th scope="col" className={thClass}>
+                  Correo
+                </th>
+                <th scope="col" className={thClass}>
+                  Rol
+                </th>
+                <th scope="col" className={thClass}>
+                  Estado
+                </th>
+                <th scope="col" className={thClass}>
+                  Creado
+                </th>
+                <th scope="col" className={thClass}>
+                  <span className="sr-only">Acciones</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -79,7 +106,12 @@ export default function Users() {
         </TableCard>
       )}
 
-      <UserForm user={editing} isSelf={editing !== 'new' && editing?.id === me?.id} onClose={() => setEditing(null)} />
+      <UserForm
+        key={formKey('user', editing)}
+        user={editing}
+        isSelf={editing !== 'new' && editing?.id === me?.id}
+        onClose={() => setEditing(null)}
+      />
     </>
   );
 }
@@ -88,16 +120,12 @@ const empty: StaffUserInput & { confirm: string } = { email: '', role: 'SUPERVIS
 
 function UserForm({ user, isSelf, onClose }: { user: StaffUser | 'new' | null; isSelf: boolean; onClose: () => void }) {
   const isNew = user === 'new';
-  const [form, setForm] = useState(empty);
+  const [form, setForm] = useState(() =>
+    user && user !== 'new' ? { email: user.email, role: user.role, active: user.active, password: '', confirm: '' } : empty,
+  );
   const [errors, setErrors] = useState<string[]>([]);
   const save = useSaveStaffUser();
   const toast = useToast();
-
-  useEffect(() => {
-    setErrors([]);
-    if (user === 'new') setForm(empty);
-    else if (user) setForm({ email: user.email, role: user.role, active: user.active, password: '', confirm: '' });
-  }, [user]);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -134,7 +162,9 @@ function UserForm({ user, isSelf, onClose }: { user: StaffUser | 'new' | null; i
       title={isNew ? 'Nuevo usuario' : isSelf ? 'Mi usuario' : 'Editar usuario'}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button type="submit" form="user-form" loading={save.isPending}>
             {isNew ? 'Crear usuario' : 'Guardar cambios'}
           </Button>
@@ -143,31 +173,73 @@ function UserForm({ user, isSelf, onClose }: { user: StaffUser | 'new' | null; i
     >
       <form id="user-form" onSubmit={submit} className="space-y-4" noValidate>
         <Field label="Correo" htmlFor="u-email">
-          <input id="u-email" type="email" required autoComplete="off" className={inputClass} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <input
+            id="u-email"
+            type="email"
+            required
+            autoComplete="off"
+            className={inputClass}
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
         </Field>
         <Field label="Rol" htmlFor="u-role" hint={isSelf ? 'No puedes cambiar tu propio rol.' : undefined}>
-          <select id="u-role" className={inputClass} value={form.role} disabled={isSelf} onChange={(e) => setForm({ ...form, role: e.target.value as StaffUserInput['role'] })}>
+          <select
+            id="u-role"
+            className={inputClass}
+            value={form.role}
+            disabled={isSelf}
+            onChange={(e) => setForm({ ...form, role: e.target.value as StaffUserInput['role'] })}
+          >
             <option value="SUPERVISOR">Supervisor</option>
             <option value="ADMIN">Administrador</option>
           </select>
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={isNew ? 'Contraseña' : 'Nueva contraseña'} htmlFor="u-pass" hint={isNew ? 'Mínimo 8 caracteres.' : 'Déjala vacía para no cambiarla.'}>
-            <input id="u-pass" type="password" autoComplete="new-password" className={inputClass} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <Field
+            label={isNew ? 'Contraseña' : 'Nueva contraseña'}
+            htmlFor="u-pass"
+            hint={isNew ? 'Mínimo 8 caracteres.' : 'Déjala vacía para no cambiarla.'}
+          >
+            <input
+              id="u-pass"
+              type="password"
+              autoComplete="new-password"
+              className={inputClass}
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
           </Field>
           <Field label="Repite la contraseña" htmlFor="u-pass2">
-            <input id="u-pass2" type="password" autoComplete="new-password" className={inputClass} value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
+            <input
+              id="u-pass2"
+              type="password"
+              autoComplete="new-password"
+              className={inputClass}
+              value={form.confirm}
+              onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+            />
           </Field>
         </div>
         {!isSelf && (
           <div className="flex items-center gap-2">
-            <input id="u-active" type="checkbox" className="h-4 w-4 accent-brand-700" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
-            <label htmlFor="u-active" className="text-sm">Usuario activo (puede iniciar sesión)</label>
+            <input
+              id="u-active"
+              type="checkbox"
+              className="h-4 w-4 accent-brand-700"
+              checked={form.active}
+              onChange={(e) => setForm({ ...form, active: e.target.checked })}
+            />
+            <label htmlFor="u-active" className="text-sm">
+              Usuario activo (puede iniciar sesión)
+            </label>
           </div>
         )}
         {errors.length > 0 && (
           <ul role="alert" className="list-inside list-disc rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-            {errors.map((er) => <li key={er}>{er}</li>)}
+            {errors.map((er) => (
+              <li key={er}>{er}</li>
+            ))}
           </ul>
         )}
       </form>

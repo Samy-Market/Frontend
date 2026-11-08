@@ -1,17 +1,14 @@
 import { ButtonHTMLAttributes, forwardRef, ReactNode, useEffect, useRef } from 'react';
-import type { ConnectionState } from '@/realtime/SocketProvider';
-
-export function cn(...classes: (string | false | null | undefined)[]) {
-  return classes.filter(Boolean).join(' ');
-}
+import { cn } from '@/lib/styles';
+import type { ConnectionState } from '@/realtime/socket';
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'success';
 const variants: Record<Variant, string> = {
-  primary: 'bg-brand-700 text-white hover:bg-brand-800 focus-visible:outline-brand-700',
-  success: 'bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-emerald-600',
-  danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600',
-  secondary: 'bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50 focus-visible:outline-slate-500',
-  ghost: 'text-slate-700 hover:bg-slate-100 focus-visible:outline-slate-500',
+  primary: 'bg-brand-700 text-on-accent shadow-sm shadow-brand-700/20 hover:bg-brand-800 focus-visible:outline-brand-700',
+  success: 'bg-ink text-on-ink hover:bg-slate-700 focus-visible:outline-slate-700',
+  danger: 'bg-red-600 text-on-accent hover:bg-red-700 focus-visible:outline-red-600',
+  secondary: 'bg-white text-ink ring-1 ring-black/10 hover:bg-slate-50 focus-visible:outline-brand-700',
+  ghost: 'text-slate-700 hover:bg-black/5 focus-visible:outline-brand-700',
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -30,8 +27,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
-        size === 'sm' ? 'px-3 py-1.5 text-sm' : 'px-4 py-2.5 text-sm',
+        'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-all duration-200 ease-[var(--ease-apple)] focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100',
+        size === 'sm' ? 'px-3.5 py-1.5 text-[13px]' : 'px-5 py-2.5 text-sm',
         variants[variant],
         className,
       )}
@@ -62,22 +59,32 @@ export function FullScreenSpinner() {
 }
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn('rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200', className)}>{children}</div>;
+  return <div className={cn(surfaceClass, 'p-5', className)}>{children}</div>;
 }
+
+/** Superficie base: blanca, esquinas amplias, borde casi invisible y sombra muy suave. */
+export const surfaceClass =
+  'rounded-[22px] bg-white ring-1 ring-black/[0.04] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_28px_rgba(0,0,0,0.04)]';
 
 type BadgeTone = 'green' | 'red' | 'amber' | 'slate' | 'sky' | 'brand';
 const badgeTones: Record<BadgeTone, string> = {
-  green: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-  red: 'bg-red-50 text-red-700 ring-red-600/20',
-  amber: 'bg-amber-50 text-amber-800 ring-amber-600/30',
-  slate: 'bg-slate-100 text-slate-700 ring-slate-500/20',
-  sky: 'bg-sky-50 text-sky-700 ring-sky-600/20',
-  brand: 'bg-brand-50 text-brand-800 ring-brand-600/20',
+  green: 'bg-emerald-50 text-emerald-700 ring-emerald-600/10',
+  red: 'bg-red-50 text-red-700 ring-red-600/10',
+  amber: 'bg-amber-50 text-amber-800 ring-amber-600/15',
+  slate: 'bg-slate-100 text-slate-600 ring-black/5',
+  sky: 'bg-sky-50 text-sky-700 ring-sky-700/10',
+  brand: 'bg-brand-50 text-brand-800 ring-brand-700/10',
 };
 
 export function Badge({ tone = 'slate', children, className }: { tone?: BadgeTone; children: ReactNode; className?: string }) {
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset', badgeTones[tone], className)}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
+        badgeTones[tone],
+        className,
+      )}
+    >
       {children}
     </span>
   );
@@ -99,8 +106,8 @@ export function ConnectionBadge({ state }: { state: ConnectionState }) {
 
 export function EmptyState({ title, description }: { title: string; description?: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 px-6 py-10 text-center">
-      <p className="font-medium text-slate-700">{title}</p>
+    <div className="animate-fade-up rounded-[22px] border border-dashed border-slate-300 px-6 py-12 text-center">
+      <p className="font-medium text-slate-800">{title}</p>
       {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
     </div>
   );
@@ -108,7 +115,7 @@ export function EmptyState({ title, description }: { title: string; description?
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800">
+    <div role="alert" className="animate-fade-up rounded-[22px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
       <p>{message}</p>
       {onRetry && (
         <Button variant="secondary" size="sm" className="mt-3" onClick={onRetry}>
@@ -156,22 +163,36 @@ export function Modal({
       }}
       aria-labelledby="modal-title"
       className={cn(
-        'm-auto w-[calc(100%-2rem)] rounded-2xl p-0 shadow-xl backdrop:bg-slate-900/40',
+        'm-auto w-[calc(100%-2rem)] rounded-[26px] bg-white p-0 shadow-[0_24px_70px_rgba(0,0,0,0.22)] ring-1 ring-black/5',
         size === 'lg' ? 'max-w-2xl' : 'max-w-md',
       )}
     >
       {open && (
         <div className="flex max-h-[85vh] flex-col">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <h2 id="modal-title" className="text-lg font-semibold">
+          <div className="flex items-center justify-between px-6 pb-2 pt-5">
+            <h2 id="modal-title" className="text-xl font-semibold">
               {title}
             </h2>
-            <button onClick={onClose} className="rounded p-1 text-slate-500 hover:bg-slate-100" aria-label="Cerrar">
-              ✕
+            <button
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-ink"
+              aria-label="Cerrar"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                aria-hidden
+              >
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
             </button>
           </div>
-          <div className="overflow-y-auto px-5 py-4">{children}</div>
-          {footer && <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-3">{footer}</div>}
+          <div className="overflow-y-auto px-6 py-4">{children}</div>
+          {footer && <div className="flex justify-end gap-2 px-6 pb-5 pt-2">{footer}</div>}
         </div>
       )}
     </dialog>
@@ -193,7 +214,7 @@ export function Field({
 }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700">
+      <label htmlFor={htmlFor} className="block text-[13px] font-medium text-slate-600">
         {label}
       </label>
       {children}
@@ -204,21 +225,12 @@ export function Field({
 }
 
 export const inputClass =
-  'block w-full rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 disabled:bg-slate-50';
+  'block w-full rounded-xl border-0 bg-white px-3.5 py-2.5 text-[15px] text-ink ring-1 ring-inset ring-black/10 transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-700/60 disabled:bg-slate-50 disabled:text-slate-400 dark:bg-slate-100';
 
-export const justificationTone = { PENDING: 'amber', APPROVED: 'green', REJECTED: 'red' } as const;
-export const justificationLabel = { PENDING: 'Pendiente', APPROVED: 'Aprobada', REJECTED: 'Rechazada' } as const;
-
-export const tableClass = 'min-w-full divide-y divide-slate-200 text-sm';
-export const thClass = 'px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500';
-export const tdClass = 'px-4 py-3 align-middle';
+export const tableClass = 'min-w-full divide-y divide-black/5 text-sm';
+export const thClass = 'px-5 py-3 text-left text-xs font-medium text-slate-500';
+export const tdClass = 'px-5 py-3.5 align-middle';
 
 export function TableCard({ children }: { children: ReactNode }) {
-  return <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">{children}</div>;
+  return <div className={cn(surfaceClass, 'animate-fade-up overflow-x-auto')}>{children}</div>;
 }
-
-export const presenceView = {
-  INSIDE: { label: 'Dentro', tone: 'green' },
-  OUTSIDE: { label: 'Fuera', tone: 'slate' },
-  NOT_MARKED: { label: 'Sin marcar', tone: 'amber' },
-} as const;

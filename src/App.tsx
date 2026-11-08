@@ -5,7 +5,9 @@ import Dashboard from './pages/admin/Dashboard';
 import Employees from './pages/admin/Employees';
 import Justifications from './pages/admin/Justifications';
 import Reports from './pages/admin/Reports';
+import Schedules from './pages/admin/Schedules';
 import Shifts from './pages/admin/Shifts';
+import Sites from './pages/admin/Sites';
 import Users from './pages/admin/Users';
 import EmployeeHistory from './pages/employee/EmployeeHistory';
 import EmployeeHome from './pages/employee/EmployeeHome';
@@ -37,8 +39,10 @@ export default function App() {
         }
       >
         <Route index element={<Dashboard />} />
+        <Route path="sedes" element={<Sites />} />
         <Route path="empleados" element={<Employees />} />
         <Route path="turnos" element={<Shifts />} />
+        <Route path="horarios" element={<Schedules />} />
         <Route path="justificaciones" element={<Justifications />} />
         <Route path="reportes" element={<Reports />} />
         <Route

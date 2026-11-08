@@ -22,7 +22,6 @@ export interface Me {
     documentId: string;
     position: string;
     site: { id: string; name: string };
-    shift: ShiftSummary | null;
   } | null;
 }
 
@@ -41,6 +40,51 @@ export interface EmployeeDayStatus {
   isLate: boolean;
   lateMinutes: number;
   missingAfterStart: boolean;
+  /** Qué le toca hoy según su horario rotativo. */
+  todayPlan: DayPlan;
+  /** Sede donde trabaja hoy (base o traslado). */
+  todaySite: DaySite;
+}
+
+export interface SiteRef {
+  id: string;
+  name: string;
+}
+
+export interface DaySite {
+  site: SiteRef;
+  homeSite: SiteRef;
+  transferred: boolean;
+  transferId: string | null;
+}
+
+export interface Site {
+  id: string;
+  name: string;
+  address: string | null;
+  active: boolean;
+  activeEmployees?: number;
+  incomingTransfersToday?: number;
+}
+
+export interface Transfer {
+  id: string;
+  employee: { id: string; fullName: string; position: string };
+  fromSite: SiteRef;
+  toSite: SiteRef;
+  startDate: string;
+  endDate: string;
+  reason: string | null;
+  createdBy: string;
+  status: 'PAST' | 'CURRENT' | 'UPCOMING';
+}
+
+/** Plan de un día: trabajar con un turno, descansar o sin horario asignado. */
+export interface DayPlan {
+  date: string;
+  kind: 'WORK' | 'REST' | 'UNASSIGNED';
+  shift: ShiftSummary | null;
+  scheduleName: string | null;
 }
 
 export interface Attendance {
@@ -87,12 +131,27 @@ export interface DaySummary {
   records: MarkRecord[];
 }
 
+export interface MonthDay extends DaySummary {
+  plan: DayPlan;
+  /** Día de trabajo ya pasado sin marcaciones. */
+  absent: boolean;
+}
+
 export interface MonthHistory {
   month: string;
   totalWorkedMinutes: number;
   daysWorked: number;
   lateDays: number;
-  days: DaySummary[];
+  absences: number;
+  scheduledDays: number;
+  days: MonthDay[];
+}
+
+export interface MySchedule {
+  from: string;
+  to: string;
+  today: string;
+  days: DayPlan[];
 }
 
 export interface Justification {
@@ -126,14 +185,13 @@ export interface TodayItem extends EmployeeDayStatus {
     fullName: string;
     position: string;
     documentId: string;
-    shift: ShiftSummary | null;
   };
 }
 
 export interface TodayResponse {
   date: string;
   generatedAt: string;
-  totals: { employees: number; inside: number; outside: number; notMarked: number; late: number };
+  totals: { employees: number; inside: number; outside: number; notMarked: number; late: number; resting: number; unassigned: number };
   items: TodayItem[];
 }
 
@@ -143,15 +201,56 @@ export interface Employee {
   documentId: string;
   position: string;
   active: boolean;
-  shiftId: string | null;
   siteId: string;
-  shift: ShiftSummary | null;
   site: { id: string; name: string };
   user: { id: string; email: string; role: Role; active: boolean };
+  currentSchedule: ScheduleSummary | null;
+  nextSchedule: ScheduleSummary | null;
+}
+
+export interface ScheduleSummary {
+  id: string;
+  scheduleId: string;
+  scheduleName: string;
+  startDate: string;
+  endDate: string | null;
 }
 
 export interface Shift extends ShiftSummary {
-  _count?: { employees: number };
+  /** Horarios que usan este turno. */
+  schedules?: { id: string; name: string }[];
+}
+
+/** Plantilla semanal (1 = lunes … 7 = domingo; shift null = descanso). */
+export interface Schedule {
+  id: string;
+  name: string;
+  description: string | null;
+  active: boolean;
+  days: { weekday: number; shiftId: string | null; shift: ShiftSummary | null }[];
+  currentEmployees?: number;
+}
+
+export interface Assignment {
+  id: string;
+  employeeId: string;
+  startDate: string;
+  endDate: string | null;
+  schedule: { id: string; name: string };
+  status: 'PAST' | 'CURRENT' | 'UPCOMING';
+}
+
+export interface ExpiringAssignment {
+  assignmentId: string;
+  employee: { id: string; fullName: string };
+  schedule: { id: string; name: string };
+  endDate: string;
+}
+
+export interface AssignResult {
+  assigned: number;
+  closedPrevious: number;
+  inactiveEmployees: string[];
 }
 
 export interface ReportTotals {
@@ -161,6 +260,8 @@ export interface ReportTotals {
   lateMinutes: number;
   openSessions: number;
   marks: number;
+  scheduledDays: number;
+  absences: number;
 }
 
 export interface ReportDay {
@@ -171,11 +272,14 @@ export interface ReportDay {
   isLate: boolean;
   lateMinutes: number;
   openSession: boolean;
+  plan: DayPlan;
+  absent: boolean;
+  site: SiteRef;
   marks: { id: string; type: MarkType; timestamp: string; isLate: boolean; lateMinutes: number }[];
 }
 
 export interface EmployeeReport {
-  employee: { id: string; fullName: string; documentId: string; position: string; active: boolean; shift: string | null };
+  employee: { id: string; fullName: string; documentId: string; position: string; active: boolean; schedules: string[]; homeSite: SiteRef };
   totals: ReportTotals;
   days: ReportDay[];
 }
@@ -186,6 +290,7 @@ export interface AttendanceReport {
   timezone: string;
   generatedAt: string;
   totals: ReportTotals & { employees: number };
+  site: SiteRef | null;
   employees: EmployeeReport[];
 }
 

@@ -1,4 +1,5 @@
-import { Badge, Card, EmptyState, ErrorState, justificationLabel, justificationTone, Spinner } from '@/components/ui';
+import { Badge, Card, EmptyState, ErrorState, Spinner } from '@/components/ui';
+import { justificationLabel, justificationTone } from '@/lib/styles';
 import { useMyJustifications } from '@/hooks/employee';
 import { errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/time';
@@ -22,7 +23,7 @@ export default function EmployeeRequests() {
       ) : q.data.length === 0 ? (
         <EmptyState title="Aún no tienes solicitudes" />
       ) : (
-        <ul className="space-y-3">
+        <ul className="stagger space-y-3">
           {q.data.map((j) => (
             <li key={j.id}>
               <Card>

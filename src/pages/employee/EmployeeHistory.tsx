@@ -1,8 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Badge, Card, ErrorState, justificationLabel, justificationTone, Spinner } from '@/components/ui';
+import { Badge, Card, ErrorState, Spinner } from '@/components/ui';
+import { justificationLabel, justificationTone } from '@/lib/styles';
 import { useMyJustifications, useMyMonth } from '@/hooks/employee';
 import { errorMessage } from '@/lib/api';
-import { currentMonth, formatDayKey, formatLate, formatMinutes, formatMinutesShort, formatMonth, formatTime, shiftMonth, todayKey } from '@/lib/time';
+import {
+  currentMonth,
+  formatDayKey,
+  formatLate,
+  formatMinutes,
+  formatMinutesShort,
+  formatMonth,
+  formatTime,
+  shiftMonth,
+  todayKey,
+} from '@/lib/time';
 import type { Justification, MarkRecord } from '@/lib/types';
 import { JustifyModal } from './JustifyModal';
 
@@ -54,7 +65,7 @@ export default function EmployeeHistory() {
         <ErrorState message={errorMessage(monthQ.error)} onRetry={() => monthQ.refetch()} />
       ) : (
         <>
-          <dl className="grid grid-cols-3 gap-2 text-center">
+          <dl className="grid grid-cols-4 gap-2 text-center">
             <Card className="p-3">
               <dt className="text-xs text-slate-500">Horas</dt>
               <dd className="mt-1 text-lg font-semibold tabular-nums">{formatMinutesShort(data!.totalWorkedMinutes)}</dd>
@@ -67,6 +78,10 @@ export default function EmployeeHistory() {
               <dt className="text-xs text-slate-500">Atrasos</dt>
               <dd className={`mt-1 text-lg font-semibold ${data!.lateDays ? 'text-amber-700' : ''}`}>{data!.lateDays}</dd>
             </Card>
+            <Card className="p-3">
+              <dt className="text-xs text-slate-500">Ausencias</dt>
+              <dd className={`mt-1 text-lg font-semibold ${data!.absences ? 'text-red-700' : ''}`}>{data!.absences}</dd>
+            </Card>
           </dl>
 
           {days.length === 0 ? (
@@ -74,7 +89,7 @@ export default function EmployeeHistory() {
               <p className="py-6 text-center text-sm text-slate-500">No hay marcaciones en este mes.</p>
             </Card>
           ) : (
-            <ul className="space-y-3">
+            <ul className="stagger space-y-3">
               {days.map((d) => {
                 const isToday = d.date === todayKey();
                 const inProgress = isToday && d.sessions.some((s) => s.open && !s.stale);
@@ -87,10 +102,18 @@ export default function EmployeeHistory() {
                           <p className="font-medium">
                             {formatDayKey(d.date)} {isToday && <span className="text-xs font-normal text-brand-700">(hoy)</span>}
                           </p>
+                          <p className="text-xs text-slate-500">
+                            {d.plan.kind === 'WORK' && d.plan.shift
+                              ? `Turno ${d.plan.shift.name} ${d.plan.shift.startTime}–${d.plan.shift.endTime}`
+                              : d.plan.kind === 'REST'
+                                ? 'Día de descanso'
+                                : 'Sin horario'}
+                          </p>
                           <div className="mt-1 flex flex-wrap gap-1">
                             {d.isLate && <Badge tone="amber">Atraso {formatLate(d.lateMinutes)}</Badge>}
                             {inProgress && <Badge tone="sky">Jornada en curso</Badge>}
                             {abandoned && <Badge tone="red">Jornada abierta (sin salida)</Badge>}
+                            {d.absent && <Badge tone="red">Ausente</Badge>}
                           </div>
                         </div>
                         <div className="text-right">
@@ -98,16 +121,18 @@ export default function EmployeeHistory() {
                           <p className="text-xs text-slate-500">horas</p>
                         </div>
                       </div>
+                      {d.absent && (
+                        <p className="px-4 py-2.5 text-sm text-slate-500">
+                          No hay marcaciones este día. Si fue un error, comunícate con tu supervisor.
+                        </p>
+                      )}
                       <ul className="divide-y divide-slate-100">
                         {d.records.map((r) => {
                           const j = byAttendance.get(r.id);
                           return (
                             <li key={r.id} className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">
                               <div className="flex items-center gap-2">
-                                <span
-                                  className={`h-2 w-2 rounded-full ${r.type === 'IN' ? 'bg-emerald-500' : 'bg-rose-500'}`}
-                                  aria-hidden
-                                />
+                                <span className={`h-2 w-2 rounded-full ${r.type === 'IN' ? 'bg-brand-700' : 'bg-ink'}`} aria-hidden />
                                 <span className="w-14 font-medium">{r.type === 'IN' ? 'Ingreso' : 'Salida'}</span>
                                 <span className="tabular-nums text-slate-700">{formatTime(r.timestamp)}</span>
                               </div>
@@ -135,7 +160,7 @@ export default function EmployeeHistory() {
         </>
       )}
 
-      <JustifyModal record={justifying} onClose={() => setJustifying(null)} />
+      <JustifyModal key={justifying?.id ?? 'closed'} record={justifying} onClose={() => setJustifying(null)} />
     </div>
   );
 }

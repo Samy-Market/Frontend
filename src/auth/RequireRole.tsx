@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { Button, ErrorState, FullScreenSpinner } from '@/components/ui';
 import { errorMessage } from '@/lib/api';
 import type { Role } from '@/lib/types';
-import { homeFor, useAuth } from './AuthContext';
+import { homeFor, useAuth } from './auth';
 
 export function RequireRole({ roles, children }: { roles: Role[]; children: ReactNode }) {
   const { token, user, loading, error, retry, logout } = useAuth();

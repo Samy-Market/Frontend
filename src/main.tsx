@@ -8,6 +8,9 @@ import { ToastProvider } from './components/Toaster';
 import './index.css';
 import { queryClient } from './lib/queryClient';
 import { SocketProvider } from './realtime/SocketProvider';
+import { applyTheme } from './lib/theme';
+
+applyTheme();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

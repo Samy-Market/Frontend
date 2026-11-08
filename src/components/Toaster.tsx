@@ -1,28 +1,11 @@
-import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react';
-
-type Tone = 'success' | 'error' | 'info' | 'warning';
-interface Toast {
-  id: number;
-  tone: Tone;
-  title: string;
-  description?: string;
-}
-
-interface ToastApi {
-  show: (t: Omit<Toast, 'id'>, ms?: number) => void;
-  success: (title: string, description?: string) => void;
-  error: (title: string, description?: string) => void;
-  info: (title: string, description?: string) => void;
-  warning: (title: string, description?: string) => void;
-}
-
-const ToastContext = createContext<ToastApi | null>(null);
+import { ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import { Toast, ToastContext, Tone, type ToastApi } from './toast';
 
 const toneStyles: Record<Tone, string> = {
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
-  error: 'border-red-200 bg-red-50 text-red-900',
-  info: 'border-sky-200 bg-sky-50 text-sky-900',
-  warning: 'border-amber-200 bg-amber-50 text-amber-900',
+  success: 'bg-emerald-500 text-on-accent',
+  error: 'bg-red-500 text-on-accent',
+  info: 'bg-brand-700 text-on-accent',
+  warning: 'bg-amber-500 text-on-accent',
 };
 const toneIcon: Record<Tone, string> = { success: '✓', error: '!', info: 'i', warning: '!' };
 
@@ -62,18 +45,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             role={t.tone === 'error' ? 'alert' : 'status'}
-            className={`pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border px-4 py-3 shadow-lg ${toneStyles[t.tone]}`}
+            className="glass pointer-events-auto flex w-full max-w-sm animate-toast-in items-start gap-3 rounded-2xl px-4 py-3 text-ink shadow-[0_12px_40px_rgba(0,0,0,0.16)] ring-1 ring-black/5"
           >
-            <span aria-hidden className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-current/10 text-xs font-bold">
+            <span
+              aria-hidden
+              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${toneStyles[t.tone]}`}
+            >
               {toneIcon[t.tone]}
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">{t.title}</p>
-              {t.description && <p className="mt-0.5 text-sm opacity-90">{t.description}</p>}
+              {t.description && <p className="mt-0.5 text-[13px] text-slate-600">{t.description}</p>}
             </div>
             <button
               onClick={() => dismiss(t.id)}
-              className="-m-1 rounded p-1 text-sm opacity-60 hover:opacity-100 focus-visible:outline-2"
+              className="-m-1 rounded-full p-1 text-sm text-slate-400 hover:text-ink focus-visible:outline-2"
               aria-label="Cerrar notificación"
             >
               ✕
@@ -83,10 +69,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       </div>
     </ToastContext.Provider>
   );
-}
-
-export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast debe usarse dentro de ToastProvider');
-  return ctx;
 }

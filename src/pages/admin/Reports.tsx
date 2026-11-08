@@ -1,8 +1,23 @@
 import { Fragment, useState } from 'react';
 import { PageHeader } from './AdminLayout';
-import { useToast } from '@/components/Toaster';
-import { Badge, Button, Card, cn, EmptyState, ErrorState, Field, inputClass, Spinner, TableCard, tableClass, tdClass, thClass } from '@/components/ui';
-import { useAttendanceReport, useEmployees } from '@/hooks/admin';
+import { useToast } from '@/components/toast';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Field,
+  inputClass,
+  Spinner,
+  TableCard,
+  tableClass,
+  tdClass,
+  thClass,
+} from '@/components/ui';
+import { cn } from '@/lib/styles';
+import { PlanLabel } from '@/components/schedule';
+import { useAttendanceReport, useEmployees, useSites } from '@/hooks/admin';
 import { api, errorMessage } from '@/lib/api';
 import { formatDayKey, formatLate, formatMinutes, formatMinutesShort, formatTime, todayKey } from '@/lib/time';
 
@@ -12,13 +27,15 @@ export default function Reports() {
   const [from, setFrom] = useState(firstOfMonth);
   const [to, setTo] = useState(todayKey);
   const [employeeId, setEmployeeId] = useState('');
+  const [siteId, setSiteId] = useState('');
+  const sites = useSites();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const toast = useToast();
   const employees = useEmployees({ active: 'all' });
 
   const validRange = !!from && !!to && from <= to;
-  const report = useAttendanceReport({ from, to, employeeId: employeeId || undefined }, validRange);
+  const report = useAttendanceReport({ from, to, employeeId: employeeId || undefined, siteId: siteId || undefined }, validRange);
   const data = report.data;
 
   const exportXlsx = async () => {
@@ -26,6 +43,7 @@ export default function Reports() {
     try {
       const search = new URLSearchParams({ from, to });
       if (employeeId) search.set('employeeId', employeeId);
+      if (siteId) search.set('siteId', siteId);
       await api.download(`/reports/attendance/export?${search}`, `asistencia_${from}_a_${to}.xlsx`);
       toast.success('Reporte exportado', 'El archivo de Excel se descargó.');
     } catch (err) {
@@ -55,12 +73,30 @@ export default function Reports() {
       />
 
       <Card className="mb-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Field label="Desde" htmlFor="r-from">
             <input id="r-from" type="date" className={inputClass} value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
           </Field>
           <Field label="Hasta" htmlFor="r-to" error={!validRange ? 'La fecha final debe ser igual o posterior a la inicial.' : undefined}>
-            <input id="r-to" type="date" className={inputClass} value={to} min={from} max={todayKey()} onChange={(e) => setTo(e.target.value)} />
+            <input
+              id="r-to"
+              type="date"
+              className={inputClass}
+              value={to}
+              min={from}
+              max={todayKey()}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </Field>
+          <Field label="Sede" htmlFor="r-site" hint="Días trabajados en esa sede (incluye traslados).">
+            <select id="r-site" className={inputClass} value={siteId} onChange={(e) => setSiteId(e.target.value)}>
+              <option value="">Todas las sedes</option>
+              {sites.data?.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
           </Field>
           <div className="lg:col-span-2">
             <Field label="Empleado" htmlFor="r-emp">
@@ -86,7 +122,9 @@ export default function Reports() {
               }}
               className={cn(
                 'rounded-full px-3 py-1 text-xs font-medium ring-1',
-                from === p.from && to === p.to ? 'bg-brand-50 text-brand-800 ring-brand-600/30' : 'text-slate-600 ring-slate-300 hover:bg-slate-50',
+                from === p.from && to === p.to
+                  ? 'bg-brand-50 text-brand-800 ring-brand-600/30'
+                  : 'text-slate-600 ring-slate-300 hover:bg-slate-50',
               )}
             >
               {p.label}
@@ -96,17 +134,24 @@ export default function Reports() {
       </Card>
 
       {!validRange ? null : report.isPending ? (
-        <div className="flex justify-center py-16 text-brand-700"><Spinner /></div>
+        <div className="flex justify-center py-16 text-brand-700">
+          <Spinner />
+        </div>
       ) : report.isError ? (
         <ErrorState message={errorMessage(report.error)} onRetry={() => report.refetch()} />
       ) : data ? (
         <div className={cn('transition-opacity', report.isFetching && 'opacity-60')} aria-busy={report.isFetching}>
-          <dl className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <dl className="stagger mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             <Stat label="Horas trabajadas" value={formatMinutesShort(data.totals.workedMinutes)} />
-            <Stat label="Días trabajados" value={data.totals.daysWorked} />
+            <Stat label="Días trabajados" value={`${data.totals.daysWorked} / ${data.totals.scheduledDays}`} />
+            <Stat label="Ausencias" value={data.totals.absences} tone={data.totals.absences ? 'text-red-700' : undefined} />
             <Stat label="Días con atraso" value={data.totals.lateDays} tone={data.totals.lateDays ? 'text-red-700' : undefined} />
             <Stat label="Minutos de atraso" value={data.totals.lateMinutes} tone={data.totals.lateMinutes ? 'text-red-700' : undefined} />
-            <Stat label="Jornadas abiertas" value={data.totals.openSessions} tone={data.totals.openSessions ? 'text-amber-700' : undefined} />
+            <Stat
+              label="Jornadas abiertas"
+              value={data.totals.openSessions}
+              tone={data.totals.openSessions ? 'text-amber-700' : undefined}
+            />
           </dl>
 
           {data.employees.length === 0 ? (
@@ -116,14 +161,36 @@ export default function Reports() {
               <table className={tableClass}>
                 <thead className="bg-slate-50">
                   <tr>
-                    <th scope="col" className={thClass}>Empleado</th>
-                    <th scope="col" className={thClass}>Turno</th>
-                    <th scope="col" className={cn(thClass, 'text-right')}>Días</th>
-                    <th scope="col" className={cn(thClass, 'text-right')}>Horas</th>
-                    <th scope="col" className={cn(thClass, 'text-right')}>Atrasos</th>
-                    <th scope="col" className={cn(thClass, 'text-right')}>Min. atraso</th>
-                    <th scope="col" className={cn(thClass, 'text-right')}>Abiertas</th>
-                    <th scope="col" className={thClass}><span className="sr-only">Detalle</span></th>
+                    <th scope="col" className={thClass}>
+                      Empleado
+                    </th>
+                    <th scope="col" className={thClass}>
+                      Sede base
+                    </th>
+                    <th scope="col" className={thClass}>
+                      Horario
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      <abbr title="Días trabajados / días programados">Días</abbr>
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      Ausencias
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      Horas
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      Atrasos
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      Min. atraso
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      Abiertas
+                    </th>
+                    <th scope="col" className={thClass}>
+                      <span className="sr-only">Detalle</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -136,14 +203,30 @@ export default function Reports() {
                             <p className="font-medium">
                               {e.employee.fullName} {!e.employee.active && <Badge>Inactivo</Badge>}
                             </p>
-                            <p className="text-xs text-slate-500">{e.employee.documentId} · {e.employee.position}</p>
+                            <p className="text-xs text-slate-500">
+                              {e.employee.documentId} · {e.employee.position}
+                            </p>
                           </td>
-                          <td className={cn(tdClass, 'text-slate-600')}>{e.employee.shift ?? 'Sin turno'}</td>
-                          <td className={cn(tdClass, 'text-right tabular-nums')}>{e.totals.daysWorked}</td>
-                          <td className={cn(tdClass, 'text-right tabular-nums font-medium')}>{formatMinutesShort(e.totals.workedMinutes)}</td>
-                          <td className={cn(tdClass, 'text-right tabular-nums', e.totals.lateDays > 0 && 'text-red-700')}>{e.totals.lateDays}</td>
+                          <td className={cn(tdClass, 'whitespace-nowrap text-slate-600')}>{e.employee.homeSite.name}</td>
+                          <td className={cn(tdClass, 'text-slate-600')}>
+                            {e.employee.schedules.join(', ') || <span className="text-slate-400">Sin horario</span>}
+                          </td>
+                          <td className={cn(tdClass, 'whitespace-nowrap text-right tabular-nums')}>
+                            {e.totals.daysWorked} / {e.totals.scheduledDays}
+                          </td>
+                          <td className={cn(tdClass, 'text-right tabular-nums', e.totals.absences > 0 && 'font-medium text-red-700')}>
+                            {e.totals.absences}
+                          </td>
+                          <td className={cn(tdClass, 'text-right tabular-nums font-medium')}>
+                            {formatMinutesShort(e.totals.workedMinutes)}
+                          </td>
+                          <td className={cn(tdClass, 'text-right tabular-nums', e.totals.lateDays > 0 && 'text-red-700')}>
+                            {e.totals.lateDays}
+                          </td>
                           <td className={cn(tdClass, 'text-right tabular-nums')}>{e.totals.lateMinutes}</td>
-                          <td className={cn(tdClass, 'text-right tabular-nums', e.totals.openSessions > 0 && 'text-amber-700')}>{e.totals.openSessions}</td>
+                          <td className={cn(tdClass, 'text-right tabular-nums', e.totals.openSessions > 0 && 'text-amber-700')}>
+                            {e.totals.openSessions}
+                          </td>
                           <td className={cn(tdClass, 'text-right')}>
                             <Button
                               variant="ghost"
@@ -159,22 +242,49 @@ export default function Reports() {
                         </tr>
                         {open && (
                           <tr id={`detail-${e.employee.id}`}>
-                            <td colSpan={8} className="bg-slate-50 px-4 py-3">
+                            <td colSpan={10} className="bg-slate-50 px-4 py-3">
                               <table className="w-full text-sm">
                                 <thead>
                                   <tr className="text-left text-xs text-slate-500">
-                                    <th scope="col" className="py-1 pr-4 font-medium">Fecha</th>
-                                    <th scope="col" className="py-1 pr-4 font-medium">Ingreso</th>
-                                    <th scope="col" className="py-1 pr-4 font-medium">Salida</th>
-                                    <th scope="col" className="py-1 pr-4 font-medium">Marcaciones</th>
-                                    <th scope="col" className="py-1 pr-4 text-right font-medium">Horas</th>
-                                    <th scope="col" className="py-1 font-medium">Observaciones</th>
+                                    <th scope="col" className="py-1 pr-4 font-medium">
+                                      Fecha
+                                    </th>
+                                    <th scope="col" className="py-1 pr-4 font-medium">
+                                      Sede
+                                    </th>
+                                    <th scope="col" className="py-1 pr-4 font-medium">
+                                      Turno programado
+                                    </th>
+                                    <th scope="col" className="py-1 pr-4 font-medium">
+                                      Ingreso
+                                    </th>
+                                    <th scope="col" className="py-1 pr-4 font-medium">
+                                      Salida
+                                    </th>
+                                    <th scope="col" className="py-1 pr-4 font-medium">
+                                      Marcaciones
+                                    </th>
+                                    <th scope="col" className="py-1 pr-4 text-right font-medium">
+                                      Horas
+                                    </th>
+                                    <th scope="col" className="py-1 font-medium">
+                                      Observaciones
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {e.days.map((d) => (
                                     <tr key={d.date} className="border-t border-slate-200">
                                       <td className="py-1.5 pr-4">{formatDayKey(d.date)}</td>
+                                      <td className="whitespace-nowrap py-1.5 pr-4">
+                                        {d.site.name}
+                                        {d.site.id !== e.employee.homeSite.id && (
+                                          <span className="ml-1 text-xs text-brand-700">(traslado)</span>
+                                        )}
+                                      </td>
+                                      <td className="py-1.5 pr-4">
+                                        <PlanLabel plan={d.plan} />
+                                      </td>
                                       <td className="py-1.5 pr-4 tabular-nums">{formatTime(d.firstIn)}</td>
                                       <td className="py-1.5 pr-4 tabular-nums">{formatTime(d.lastOut)}</td>
                                       <td className="py-1.5 pr-4 text-xs tabular-nums text-slate-600">
@@ -185,6 +295,8 @@ export default function Reports() {
                                         <div className="flex flex-wrap gap-1">
                                           {d.isLate && <Badge tone="red">Atraso {formatLate(d.lateMinutes)}</Badge>}
                                           {d.openSession && <Badge tone="amber">Jornada abierta</Badge>}
+                                          {d.absent && <Badge tone="red">Ausente</Badge>}
+                                          {!d.absent && d.plan.kind === 'REST' && <Badge tone="sky">Trabajó en descanso</Badge>}
                                         </div>
                                       </td>
                                     </tr>
@@ -214,7 +326,7 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
   return (
     <Card className="p-4">
       <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className={cn('mt-1 text-2xl font-bold tabular-nums', tone)}>{value}</dd>
+      <dd className={cn('mt-1 text-[28px] font-semibold leading-tight tracking-tight tabular-nums', tone)}>{value}</dd>
     </Card>
   );
 }

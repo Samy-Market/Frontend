@@ -24,5 +24,13 @@ export const qk = {
   employeesAll: ['employees'] as const,
   shifts: ['shifts'] as const,
   staffUsers: ['users'] as const,
+  schedules: ['schedules'] as const,
+  sites: ['sites'] as const,
+  transfers: (scope: string) => ['transfers', scope] as const,
+  transfersAll: ['transfers'] as const,
+  expiring: (days: number) => ['schedules', 'expiring', days] as const,
+  assignments: (employeeId: string) => ['assignments', employeeId] as const,
+  assignmentsAll: ['assignments'] as const,
+  mySchedule: ['attendance', 'me', 'schedule'] as const,
   report: (params: Record<string, string>) => ['reports', params] as const,
 };

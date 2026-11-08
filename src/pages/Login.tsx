@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { FormEvent, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { homeFor, isAdminRole, useAuth } from '@/auth/AuthContext';
+import { homeFor, isAdminRole, useAuth } from '@/auth/auth';
+import { Logo } from '@/components/Brand';
+import { ThemeCycleButton } from '@/components/ThemeToggle';
 import { Button, Field, FullScreenSpinner, inputClass } from '@/components/ui';
 import { api, errorMessage } from '@/lib/api';
 import type { SetupStatus } from '@/lib/types';
@@ -37,8 +39,8 @@ export default function Login() {
     try {
       const me = await login(email, password);
       const from = (location.state as { from?: string } | null)?.from;
-      const target = from && (isAdminRole(me.role) === from.startsWith('/admin')) ? from : homeFor(me.role);
-      navigate(target, { replace: true });
+      const target = from && isAdminRole(me.role) === from.startsWith('/admin') ? from : homeFor(me.role);
+      void navigate(target, { replace: true });
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -47,14 +49,19 @@ export default function Login() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-brand-50 to-slate-50 px-4 py-10">
+    <main className="relative flex min-h-screen items-center justify-center bg-white px-5 py-10 dark:bg-slate-50">
+      <ThemeCycleButton className="absolute right-4 top-4" />
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <img src="/icon.svg" alt="" className="mx-auto h-16 w-16" />
-          <h1 className="mt-4 text-2xl font-bold tracking-tight">Control de Asistencia</h1>
-          <p className="mt-1 text-sm text-slate-600">Ingresa con tu correo corporativo</p>
+          <Logo className="mx-auto h-14 animate-scale-in" />
+          <h1 className="mt-8 animate-fade-up text-[28px] font-semibold [animation-delay:120ms]">Control de asistencia</h1>
+          <p className="mt-1 animate-fade-up text-[15px] text-slate-500 [animation-delay:180ms]">Ingresa con tu correo corporativo</p>
         </div>
-        <form onSubmit={onSubmit} className="space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200" noValidate>
+        <form
+          onSubmit={onSubmit}
+          className="animate-fade-up space-y-4 rounded-[26px] bg-slate-50 p-6 dark:bg-white [animation-delay:240ms]"
+          noValidate
+        >
           <Field label="Correo electrónico" htmlFor="email">
             <input
               id="email"
@@ -80,11 +87,11 @@ export default function Login() {
             />
           </Field>
           {error && (
-            <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p role="alert" className="animate-fade-in rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
             </p>
           )}
-          <Button type="submit" className="w-full py-3" loading={loading} disabled={!email || !password}>
+          <Button type="submit" className="w-full py-3 text-[15px]" loading={loading} disabled={!email || !password}>
             Ingresar
           </Button>
         </form>

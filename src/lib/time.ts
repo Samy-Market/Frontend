@@ -1,5 +1,5 @@
 /** Utilidades de fecha/hora. Todo se muestra en la zona de referencia de la empresa. */
-export const TIMEZONE = 'America/Guayaquil';
+const TIMEZONE = 'America/Guayaquil';
 const LOCALE = 'es-EC';
 
 const fmt = (opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(LOCALE, { timeZone: TIMEZONE, ...opts });
@@ -19,7 +19,7 @@ export const formatLongDate = (d: Date) => capitalize(dateLongFmt.format(d));
 export const formatDayKey = (key: string) => capitalize(dateShortFmt.format(dayKeyToDate(key)));
 
 /** Día local "yyyy-MM-dd" para una fecha. */
-export const toDayKey = (d: Date) => isoDateFmt.format(d);
+const toDayKey = (d: Date) => isoDateFmt.format(d);
 export const todayKey = () => toDayKey(new Date());
 export const currentMonth = () => todayKey().slice(0, 7);
 
@@ -68,4 +68,31 @@ export function formatMinutesShort(total: number): string {
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Suma días a un día local "yyyy-MM-dd". */
+export function addDaysKey(key: string, n: number): string {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+
+/** Suma meses a un día local (si el día no existe en el mes destino, usa el último del mes). */
+export function addMonthsKey(key: string, n: number): string {
+  const [y, m, d] = key.split('-').map(Number);
+  const last = new Date(Date.UTC(y, m - 1 + n + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(y, m - 1 + n, Math.min(d, last))).toISOString().slice(0, 10);
+}
+
+/** "2026-11-07" → "07/11/2026" */
+export function formatDayKeyNumeric(key: string | null | undefined): string {
+  if (!key) return '—';
+  const [y, m, d] = key.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/** Días entre hoy y una fecha (negativo si ya pasó). */
+export function daysUntil(key: string): number {
+  const [y, m, d] = key.split('-').map(Number);
+  const [ty, tm, td] = todayKey().split('-').map(Number);
+  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(ty, tm - 1, td)) / 86_400_000);
 }

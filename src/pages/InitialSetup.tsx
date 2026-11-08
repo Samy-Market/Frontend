@@ -1,7 +1,9 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/auth/AuthContext';
-import { useToast } from '@/components/Toaster';
+import { useAuth } from '@/auth/auth';
+import { useToast } from '@/components/toast';
+import { Logo } from '@/components/Brand';
+import { ThemeCycleButton } from '@/components/ThemeToggle';
 import { Button, Field, inputClass } from '@/components/ui';
 import { ApiError, errorMessage } from '@/lib/api';
 
@@ -31,7 +33,7 @@ export default function InitialSetup({ requiresCode, onAlreadyConfigured }: { re
     try {
       await setupAdmin({ email, password, siteName: siteName.trim() || undefined, code: requiresCode ? code.trim() : undefined });
       toast.success('¡Sistema configurado!', 'Ya eres administrador. Empieza creando los turnos y los empleados.');
-      navigate('/admin', { replace: true });
+      void navigate('/admin', { replace: true });
     } catch (err) {
       // Otra persona terminó la configuración primero: volver al login normal.
       if (err instanceof ApiError && err.status === 403 && err.message.includes('ya tiene un administrador')) {
@@ -46,34 +48,77 @@ export default function InitialSetup({ requiresCode, onAlreadyConfigured }: { re
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-brand-50 to-slate-50 px-4 py-10">
+    <main className="relative flex min-h-screen items-center justify-center bg-white px-5 py-10 dark:bg-slate-50">
+      <ThemeCycleButton className="absolute right-4 top-4" />
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <img src="/icon.svg" alt="" className="mx-auto h-16 w-16" />
-          <h1 className="mt-4 text-2xl font-bold tracking-tight">Configuración inicial</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Aún no hay ningún administrador. Crea el tuyo para empezar a usar el sistema.
-          </p>
+          <Logo className="mx-auto h-12 animate-scale-in" />
+          <h1 className="mt-8 animate-fade-up text-[28px] font-semibold [animation-delay:120ms]">Configuración inicial</h1>
+          <p className="mt-1 text-sm text-slate-600">Aún no hay ningún administrador. Crea el tuyo para empezar a usar el sistema.</p>
         </div>
 
-        <form onSubmit={onSubmit} noValidate className="space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <form
+          onSubmit={onSubmit}
+          noValidate
+          className="animate-fade-up space-y-4 rounded-[26px] bg-slate-50 p-6 dark:bg-white [animation-delay:200ms]"
+        >
           <Field label="Correo del administrador" htmlFor="s-email">
-            <input id="s-email" type="email" autoComplete="username" required className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@tuempresa.com" />
+            <input
+              id="s-email"
+              type="email"
+              autoComplete="username"
+              required
+              className={inputClass}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@tuempresa.com"
+            />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Contraseña" htmlFor="s-pass" hint="Mínimo 8 caracteres.">
-              <input id="s-pass" type="password" autoComplete="new-password" required className={inputClass} value={password} onChange={(e) => setPassword(e.target.value)} />
+              <input
+                id="s-pass"
+                type="password"
+                autoComplete="new-password"
+                required
+                className={inputClass}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </Field>
             <Field label="Repite la contraseña" htmlFor="s-pass2">
-              <input id="s-pass2" type="password" autoComplete="new-password" required className={inputClass} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+              <input
+                id="s-pass2"
+                type="password"
+                autoComplete="new-password"
+                required
+                className={inputClass}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+              />
             </Field>
           </div>
           <Field label="Nombre de la sede (opcional)" htmlFor="s-site" hint="Si lo dejas vacío se llamará “Sede principal”.">
-            <input id="s-site" className={inputClass} value={siteName} onChange={(e) => setSiteName(e.target.value)} placeholder="Matriz Guayaquil" maxLength={120} />
+            <input
+              id="s-site"
+              className={inputClass}
+              value={siteName}
+              onChange={(e) => setSiteName(e.target.value)}
+              placeholder="Matriz Guayaquil"
+              maxLength={120}
+            />
           </Field>
           {requiresCode && (
             <Field label="Código de instalación" htmlFor="s-code" hint="Es el valor de la variable SETUP_CODE del servidor.">
-              <input id="s-code" type="password" autoComplete="off" required className={inputClass} value={code} onChange={(e) => setCode(e.target.value)} />
+              <input
+                id="s-code"
+                type="password"
+                autoComplete="off"
+                required
+                className={inputClass}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
             </Field>
           )}
 
@@ -88,7 +133,9 @@ export default function InitialSetup({ requiresCode, onAlreadyConfigured }: { re
           <Button type="submit" className="w-full py-3" loading={loading} disabled={!email || !password || !confirm}>
             Crear administrador
           </Button>
-          <p className="text-center text-xs text-slate-500">Este formulario solo aparece una vez: cuando ya existe un administrador, se desactiva.</p>
+          <p className="text-center text-xs text-slate-500">
+            Este formulario solo aparece una vez: cuando ya existe un administrador, se desactiva.
+          </p>
         </form>
       </div>
     </main>

@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { useToast } from '@/components/Toaster';
+import { FormEvent, useState } from 'react';
+import { useToast } from '@/components/toast';
 import { Button, Field, inputClass, Modal } from '@/components/ui';
 import { useCreateJustification } from '@/hooks/employee';
 import { errorMessage } from '@/lib/api';
@@ -11,11 +11,6 @@ export function JustifyModal({ record, onClose }: { record: MarkRecord | null; o
   const [error, setError] = useState<string | null>(null);
   const create = useCreateJustification();
   const toast = useToast();
-
-  useEffect(() => {
-    setReason('');
-    setError(null);
-  }, [record]);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -55,8 +50,7 @@ export function JustifyModal({ record, onClose }: { record: MarkRecord | null; o
       {record && (
         <form id="justify-form" onSubmit={submit} className="space-y-4">
           <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
-            <span className="font-medium">{record.type === 'IN' ? 'Ingreso' : 'Salida'}</span> del{' '}
-            {formatDateTime(record.timestamp)}
+            <span className="font-medium">{record.type === 'IN' ? 'Ingreso' : 'Salida'}</span> del {formatDateTime(record.timestamp)}
             {record.isLate && <span className="text-amber-700"> · {formatLate(record.lateMinutes)} de atraso</span>}
           </div>
           <Field

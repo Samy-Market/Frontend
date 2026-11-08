@@ -41,7 +41,7 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
     let message = 'Ocurrió un error inesperado.';
     let details: string[] | undefined;
     try {
-      const body = await res.json();
+      const body = (await res.json()) as { message?: string; details?: string[] };
       message = body.message ?? message;
       details = body.details;
     } catch {
@@ -55,13 +55,16 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
 
 export const api = {
   async get<T>(path: string): Promise<T> {
-    return (await request(path)).json();
+    return (await request(path)).json() as Promise<T>;
   },
   async post<T>(path: string, body?: unknown): Promise<T> {
-    return (await request(path, { method: 'POST', body: JSON.stringify(body ?? {}) })).json();
+    return (await request(path, { method: 'POST', body: JSON.stringify(body ?? {}) })).json() as Promise<T>;
   },
   async patch<T>(path: string, body: unknown): Promise<T> {
-    return (await request(path, { method: 'PATCH', body: JSON.stringify(body) })).json();
+    return (await request(path, { method: 'PATCH', body: JSON.stringify(body) })).json() as Promise<T>;
+  },
+  async delete<T>(path: string): Promise<T> {
+    return (await request(path, { method: 'DELETE' })).json() as Promise<T>;
   },
   /** Descarga un archivo binario respetando el nombre que envía el servidor. */
   async download(path: string, fallbackName: string): Promise<void> {
