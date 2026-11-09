@@ -5,11 +5,9 @@ export interface AuthState {
   token: string | null;
   user: Me | null;
   loading: boolean;
-  /** Error al cargar la sesión (p. ej. servidor caído). */
   error: unknown;
   retry: () => void;
   login: (email: string, password: string) => Promise<Me>;
-  /** Crea el primer administrador (configuración inicial) e inicia su sesión. */
   setupAdmin: (data: { email: string; password: string; siteName?: string; code?: string }) => Promise<Me>;
   logout: () => void;
 }

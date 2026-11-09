@@ -10,18 +10,19 @@ import type {
   Justification,
   JustificationStatus,
   Schedule,
+  ScheduleMember,
   Shift,
   Site,
   StaffUser,
   Transfer,
   TodayResponse,
+  UnassignResult,
 } from '@/lib/types';
 
 export const useToday = () =>
   useQuery({
     queryKey: qk.today,
     queryFn: () => api.get<TodayResponse>('/attendance/today'),
-    // Respaldo: recalcula "sin marcar / atrasado" aunque nadie marque.
     refetchInterval: 60_000,
   });
 
@@ -46,6 +47,18 @@ export interface EmployeeInput {
   siteId: string;
   active: boolean;
   password?: string;
+}
+
+export function useDeleteEmployee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<{ deleted: boolean }>(`/employees/${id}`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.employeesAll });
+      void qc.invalidateQueries({ queryKey: qk.today });
+      void qc.invalidateQueries({ queryKey: qk.sites });
+    },
+  });
 }
 
 export function useSaveEmployee() {
@@ -123,10 +136,6 @@ export function useSaveStaffUser() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Horarios rotativos
-// ---------------------------------------------------------------------------
-
 export const useSchedules = () => useQuery({ queryKey: qk.schedules, queryFn: () => api.get<Schedule[]>('/schedules') });
 
 export interface ScheduleInput {
@@ -136,7 +145,6 @@ export interface ScheduleInput {
   days: { weekday: number; shiftId: string | null }[];
 }
 
-/** Al cambiar horarios o asignaciones cambian el dashboard, empleados y reportes. */
 function invalidateScheduleData(qc: ReturnType<typeof useQueryClient>) {
   void qc.invalidateQueries({ queryKey: qk.schedules });
   void qc.invalidateQueries({ queryKey: qk.assignmentsAll });
@@ -180,10 +188,25 @@ export function useUpdateAssignment() {
   });
 }
 
-export function useDeleteAssignment() {
+export function useDeleteSchedule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.delete<{ deleted: boolean }>(`/schedule-assignments/${id}`),
+    mutationFn: (id: string) => api.delete<{ deleted: boolean }>(`/schedules/${id}`),
+    onSuccess: () => invalidateScheduleData(qc),
+  });
+}
+
+export const useScheduleMembers = (scheduleId: string | null) =>
+  useQuery({
+    queryKey: qk.scheduleMembers(scheduleId ?? ''),
+    queryFn: () => api.get<ScheduleMember[]>(`/schedules/${scheduleId}/assignments`),
+    enabled: !!scheduleId,
+  });
+
+export function useUnassign() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => api.post<UnassignResult>('/schedule-assignments/unassign', { ids }),
     onSuccess: () => invalidateScheduleData(qc),
   });
 }
@@ -198,10 +221,6 @@ export function useDeleteShift() {
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.shifts }),
   });
 }
-
-// ---------------------------------------------------------------------------
-// Sedes y traslados
-// ---------------------------------------------------------------------------
 
 export const useSites = () => useQuery({ queryKey: qk.sites, queryFn: () => api.get<Site[]>('/sites') });
 

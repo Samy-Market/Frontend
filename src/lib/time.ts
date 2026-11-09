@@ -1,4 +1,3 @@
-/** Utilidades de fecha/hora. Todo se muestra en la zona de referencia de la empresa. */
 const TIMEZONE = 'America/Guayaquil';
 const LOCALE = 'es-EC';
 
@@ -15,10 +14,8 @@ export const formatTimeWithSeconds = (d: Date) => timeSecFmt.format(d);
 export const formatDateTime = (d: string | Date | null | undefined) => (d ? dateTimeFmt.format(new Date(d)) : '—');
 export const formatLongDate = (d: Date) => capitalize(dateLongFmt.format(d));
 
-/** "yyyy-MM-dd" (día local) → "lun, 03 nov" */
 export const formatDayKey = (key: string) => capitalize(dateShortFmt.format(dayKeyToDate(key)));
 
-/** Día local "yyyy-MM-dd" para una fecha. */
 const toDayKey = (d: Date) => isoDateFmt.format(d);
 export const todayKey = () => toDayKey(new Date());
 export const currentMonth = () => todayKey().slice(0, 7);
@@ -46,13 +43,11 @@ export function formatMinutes(total: number): string {
   return `${h} h ${String(m).padStart(2, '0')} min`;
 }
 
-/** Atraso legible: "14 min" o "1 h 05 min". */
 export function formatLate(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;
   return formatMinutes(minutes);
 }
 
-/** "hoy", "ayer" o la fecha corta, para contextualizar una hora. */
 export function relativeDayLabel(d: string | Date): string {
   const key = toDayKey(new Date(d));
   if (key === todayKey()) return 'hoy';
@@ -70,27 +65,23 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** Suma días a un día local "yyyy-MM-dd". */
 export function addDaysKey(key: string, n: number): string {
   const [y, m, d] = key.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
-/** Suma meses a un día local (si el día no existe en el mes destino, usa el último del mes). */
 export function addMonthsKey(key: string, n: number): string {
   const [y, m, d] = key.split('-').map(Number);
   const last = new Date(Date.UTC(y, m - 1 + n + 1, 0)).getUTCDate();
   return new Date(Date.UTC(y, m - 1 + n, Math.min(d, last))).toISOString().slice(0, 10);
 }
 
-/** "2026-11-07" → "07/11/2026" */
 export function formatDayKeyNumeric(key: string | null | undefined): string {
   if (!key) return '—';
   const [y, m, d] = key.split('-');
   return `${d}/${m}/${y}`;
 }
 
-/** Días entre hoy y una fecha (negativo si ya pasó). */
 export function daysUntil(key: string): number {
   const [y, m, d] = key.split('-').map(Number);
   const [ty, tm, td] = todayKey().split('-').map(Number);

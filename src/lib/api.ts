@@ -3,6 +3,7 @@ export const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.rep
 const TOKEN_KEY = 'asistencia.token';
 
 export const tokenStore = {
+  key: TOKEN_KEY,
   get: () => localStorage.getItem(TOKEN_KEY),
   set: (t: string) => localStorage.setItem(TOKEN_KEY, t),
   clear: () => localStorage.removeItem(TOKEN_KEY),
@@ -66,7 +67,6 @@ export const api = {
   async delete<T>(path: string): Promise<T> {
     return (await request(path, { method: 'DELETE' })).json() as Promise<T>;
   },
-  /** Descarga un archivo binario respetando el nombre que envía el servidor. */
   async download(path: string, fallbackName: string): Promise<void> {
     const res = await request(path);
     const disposition = res.headers.get('content-disposition') ?? '';

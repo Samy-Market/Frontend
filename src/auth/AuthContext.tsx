@@ -5,6 +5,8 @@ import { api, setUnauthorizedHandler, tokenStore } from '@/lib/api';
 import { qk } from '@/lib/queryClient';
 import type { LoginResponse, Me } from '@/lib/types';
 import { AuthContext, type AuthState } from './auth';
+import { activityStore } from './session';
+import { SessionWatcher } from './SessionWatcher';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => tokenStore.get());
@@ -16,7 +18,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: () => api.get<Me>('/auth/me'),
     enabled: !!token,
     staleTime: 5 * 60_000,
-    // Si el servidor no responde, se reintenta solo cada 5 s.
     refetchInterval: (q) => (q.state.status === 'error' ? 5000 : false),
   });
 
@@ -34,8 +35,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => setUnauthorizedHandler(null);
   }, [logout, toast]);
 
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== tokenStore.key) return;
+      if (!e.newValue) {
+        setToken(null);
+        qc.clear();
+      } else if (e.newValue !== token) {
+        qc.clear();
+        setToken(e.newValue);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [qc, token]);
+
   const adoptSession = useCallback(
     (res: LoginResponse) => {
+      activityStore.touch();
       tokenStore.set(res.accessToken);
       qc.clear();
       qc.setQueryData(qk.me, res.user);
@@ -71,5 +88,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [token, me, isPending, fetchStatus, meError, refetch, login, setupAdmin, logout],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <SessionWatcher />
+    </AuthContext.Provider>
+  );
 }

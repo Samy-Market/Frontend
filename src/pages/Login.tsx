@@ -8,6 +8,7 @@ import { Button, Field, FullScreenSpinner, inputClass } from '@/components/ui';
 import { api, errorMessage } from '@/lib/api';
 import type { SetupStatus } from '@/lib/types';
 import InitialSetup from './InitialSetup';
+import { PasswordInput } from '@/components/PasswordInput';
 
 export default function Login() {
   const { login, user } = useAuth();
@@ -18,7 +19,6 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // ¿El sistema todavía no tiene administrador? Entonces se muestra la configuración inicial.
   const setupQ = useQuery({
     queryKey: ['auth', 'setup'],
     queryFn: () => api.get<SetupStatus>('/auth/setup'),
@@ -68,6 +68,9 @@ export default function Login() {
               type="email"
               inputMode="email"
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
               className={inputClass}
               value={email}
@@ -76,12 +79,11 @@ export default function Login() {
             />
           </Field>
           <Field label="Contraseña" htmlFor="password">
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="current-password"
               required
-              className={inputClass}
+              warnCapsLock
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />

@@ -62,7 +62,6 @@ export function Card({ className, children }: { className?: string; children: Re
   return <div className={cn(surfaceClass, 'p-5', className)}>{children}</div>;
 }
 
-/** Superficie base: blanca, esquinas amplias, borde casi invisible y sombra muy suave. */
 export const surfaceClass =
   'rounded-[22px] bg-white ring-1 ring-black/[0.04] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_28px_rgba(0,0,0,0.04)]';
 
@@ -126,7 +125,6 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   );
 }
 
-/** Modal accesible basado en <dialog> nativo (atrapa el foco y cierra con Esc). */
 export function Modal({
   open,
   onClose,

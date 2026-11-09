@@ -8,7 +8,19 @@ import { WeekGrid } from '@/components/schedule';
 import { shiftHours, WEEKDAYS_LONG } from '@/lib/schedule';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, inputClass, Modal, Spinner } from '@/components/ui';
 import { cn } from '@/lib/styles';
-import { ScheduleInput, useAssignSchedule, useEmployees, useExpiring, useSaveSchedule, useSchedules, useShifts } from '@/hooks/admin';
+import {
+  ScheduleInput,
+  useAssignSchedule,
+  useDeleteSchedule,
+  useEmployees,
+  useExpiring,
+  useSaveSchedule,
+  useScheduleMembers,
+  useSchedules,
+  useShifts,
+  useUnassign,
+} from '@/hooks/admin';
+import { ConfirmDelete } from '@/components/ConfirmDelete';
 import { ApiError, errorMessage } from '@/lib/api';
 import { addDaysKey, addMonthsKey, daysUntil, formatDayKeyNumeric, todayKey } from '@/lib/time';
 import type { ExpiringAssignment, Schedule } from '@/lib/types';
@@ -20,6 +32,8 @@ export default function Schedules() {
   const shifts = useShifts();
   const [editing, setEditing] = useState<Schedule | 'new' | null>(null);
   const [assigning, setAssigning] = useState<AssignPreset | null>(null);
+  const [viewing, setViewing] = useState<Schedule | null>(null);
+  const deleteSchedule = useDeleteSchedule();
   const shiftOrder = useMemo(() => (shifts.data ?? []).map((s) => s.id), [shifts.data]);
   const noShifts = shifts.data?.length === 0;
 
@@ -83,16 +97,35 @@ export default function Schedules() {
                   </Badge>
                 </div>
                 <WeekGrid schedule={s} shiftOrder={shiftOrder} />
-                {canEdit && (
-                  <div className="mt-auto flex flex-wrap gap-2">
+                <div className="mt-auto flex flex-wrap gap-2">
+                  {canEdit && (
                     <Button size="sm" onClick={() => setAssigning({ scheduleId: s.id })} disabled={!s.active}>
                       Asignar a empleados
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditing(s)}>
-                      Editar
-                    </Button>
-                  </div>
-                )}
+                  )}
+                  <Button size="sm" variant="secondary" onClick={() => setViewing(s)}>
+                    Ver asignados
+                  </Button>
+                  {canEdit && (
+                    <>
+                      <Button size="sm" variant="ghost" onClick={() => setEditing(s)}>
+                        Editar
+                      </Button>
+                      <ConfirmDelete
+                        what="horario"
+                        name={s.name}
+                        blockedReason={
+                          s.currentEmployees
+                            ? `Lo usan ${s.currentEmployees} ${s.currentEmployees === 1 ? 'empleado' : 'empleados'} hoy. Quítalos primero con "Ver asignados".`
+                            : null
+                        }
+                        onDelete={() => deleteSchedule.mutateAsync(s.id)}
+                      >
+                        <p className="text-slate-500">Solo se puede eliminar un horario que nunca se asignó. Si ya se usó, desactívalo.</p>
+                      </ConfirmDelete>
+                    </>
+                  )}
+                </div>
               </Card>
             </li>
           ))}
@@ -105,19 +138,15 @@ export default function Schedules() {
           <AssignModal key={formKey('assign', !!assigning)} preset={assigning} onClose={() => setAssigning(null)} />
         </>
       )}
+      <MembersModal key={viewing?.id ?? 'none'} schedule={viewing} canEdit={canEdit} onClose={() => setViewing(null)} />
     </>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Rotaciones por vencer
-// ---------------------------------------------------------------------------
 
 function ExpiringPanel({ canEdit, onPlan }: { canEdit: boolean; onPlan: (items: ExpiringAssignment[]) => void }) {
   const q = useExpiring(30);
   if (!q.data || q.data.length === 0) return null;
 
-  // Agrupa por fecha de fin: normalmente todo un grupo rota el mismo día.
   const groups = new Map<string, ExpiringAssignment[]>();
   for (const e of q.data) groups.set(e.endDate, [...(groups.get(e.endDate) ?? []), e]);
 
@@ -154,10 +183,6 @@ function ExpiringPanel({ canEdit, onPlan }: { canEdit: boolean; onPlan: (items: 
   );
 }
 
-// ---------------------------------------------------------------------------
-// Crear / editar plantilla
-// ---------------------------------------------------------------------------
-
 const emptyDays = () => WEEKDAYS_LONG.map((_, i) => ({ weekday: i + 1, shiftId: null as string | null }));
 
 function ScheduleForm({ schedule, onClose }: { schedule: Schedule | 'new' | null; onClose: () => void }) {
@@ -182,7 +207,6 @@ function ScheduleForm({ schedule, onClose }: { schedule: Schedule | 'new' | null
   const setDay = (weekday: number, shiftId: string | null) =>
     setForm((f) => ({ ...f, days: f.days.map((d) => (d.weekday === weekday ? { ...d, shiftId } : d)) }));
 
-  // Vista previa con los datos completos de cada turno.
   const preview = {
     days: form.days.map((d) => ({ ...d, shift: shiftList.find((s) => s.id === d.shiftId) ?? null })),
   };
@@ -304,10 +328,6 @@ function ScheduleForm({ schedule, onClose }: { schedule: Schedule | 'new' | null
   );
 }
 
-// ---------------------------------------------------------------------------
-// Asignar a empleados
-// ---------------------------------------------------------------------------
-
 export interface AssignPreset {
   scheduleId?: string;
   employeeIds?: string[];
@@ -315,7 +335,6 @@ export interface AssignPreset {
 }
 
 function presetFromExpiring(items: ExpiringAssignment[]): AssignPreset {
-  // La nueva rotación empieza el día siguiente al fin de la actual.
   const start = addDaysKey(items[0].endDate, 1);
   return { employeeIds: items.map((i) => i.employee.id), startDate: start };
 }
@@ -327,7 +346,6 @@ export function AssignModal({ preset, onClose }: { preset: AssignPreset | null; 
   const employees = useEmployees({ active: 'true' });
   const assign = useAssignSchedule();
   const toast = useToast();
-  // Se vuelve a montar (key) cada vez que se abre: arranca con lo que trae `preset`.
   const [scheduleId, setScheduleId] = useState(preset?.scheduleId ?? '');
   const [startDate, setStartDate] = useState(preset?.startDate ?? todayKey());
   const [duration, setDuration] = useState<Duration>('3');
@@ -523,6 +541,161 @@ export function AssignModal({ preset, onClose }: { preset: AssignPreset | null; 
           </ul>
         )}
       </form>
+    </Modal>
+  );
+}
+
+function MembersModal({ schedule, canEdit, onClose }: { schedule: Schedule | null; canEdit: boolean; onClose: () => void }) {
+  const members = useScheduleMembers(schedule?.id ?? null);
+  const unassign = useUnassign();
+  const toast = useToast();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const list = members.data ?? [];
+  const today = todayKey();
+  const removable = list.filter((m) => m.endDate !== today);
+  const chosen = removable.filter((m) => selected.has(m.id));
+  const allSelected = removable.length > 0 && chosen.length === removable.length;
+
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const remove = () =>
+    unassign.mutate(
+      chosen.map((m) => m.id),
+      {
+        onSuccess: (r) => {
+          const parts = [
+            r.ended && `${r.ended} ${r.ended === 1 ? 'termina' : 'terminan'} hoy`,
+            r.deleted && `${r.deleted} ${r.deleted === 1 ? 'próximo eliminado' : 'próximos eliminados'}`,
+          ]
+            .filter(Boolean)
+            .join(' · ');
+          toast.success('Empleados quitados del horario', parts || undefined);
+          setSelected(new Set());
+          setConfirming(false);
+        },
+        onError: (err) => {
+          setError(errorMessage(err));
+          setConfirming(false);
+        },
+      },
+    );
+
+  return (
+    <Modal
+      open={!!schedule}
+      onClose={onClose}
+      size="lg"
+      title={`Asignados a ${schedule?.name ?? ''}`}
+      footer={
+        confirming ? (
+          <>
+            <Button variant="secondary" onClick={() => setConfirming(false)}>
+              Volver
+            </Button>
+            <Button variant="danger" loading={unassign.isPending} onClick={remove}>
+              Sí, quitar {chosen.length}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="secondary" onClick={onClose}>
+              Cerrar
+            </Button>
+            {canEdit && (
+              <Button variant="danger" disabled={!chosen.length} onClick={() => setConfirming(true)}>
+                Quitar del horario{chosen.length ? ` (${chosen.length})` : ''}
+              </Button>
+            )}
+          </>
+        )
+      }
+    >
+      {members.isPending ? (
+        <div className="flex justify-center py-10 text-brand-700">
+          <Spinner />
+        </div>
+      ) : members.isError ? (
+        <ErrorState message={errorMessage(members.error)} onRetry={() => members.refetch()} />
+      ) : list.length === 0 ? (
+        <EmptyState title="Nadie tiene este horario" description="No hay empleados con este horario hoy ni más adelante." />
+      ) : confirming ? (
+        <div className="space-y-3 text-sm">
+          <p>
+            ¿Quitar a <strong>{chosen.length}</strong> {chosen.length === 1 ? 'empleado' : 'empleados'} del horario{' '}
+            <strong>{schedule?.name}</strong>?
+          </p>
+          <ul className="list-inside list-disc text-slate-600">
+            {chosen.some((m) => m.startDate < todayKey()) && (
+              <li>Quienes ya lo tienen vigente lo conservan hasta hoy y desde mañana quedan sin este horario.</li>
+            )}
+            {chosen.some((m) => m.startDate >= todayKey()) && <li>Las asignaciones que empiezan hoy o más adelante se eliminan.</li>}
+            <li>Las marcaciones y el historial no se tocan.</li>
+          </ul>
+        </div>
+      ) : (
+        <>
+          {error && (
+            <p role="alert" className="mb-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </p>
+          )}
+          <ul className="divide-y divide-slate-100">
+            {canEdit && (
+              <li className="pb-2">
+                <label className="flex items-center gap-3 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-brand-700"
+                    checked={allSelected}
+                    disabled={!removable.length}
+                    onChange={() => setSelected(allSelected ? new Set() : new Set(removable.map((m) => m.id)))}
+                  />
+                  Seleccionar todos ({removable.length})
+                </label>
+              </li>
+            )}
+            {list.map((m) => (
+              <li key={m.id} className="py-2.5">
+                <label className={cn('flex items-center gap-3', canEdit && 'cursor-pointer')}>
+                  {canEdit && (
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-brand-700"
+                      checked={selected.has(m.id)}
+                      disabled={m.endDate === today}
+                      onChange={() => toggle(m.id)}
+                      aria-label={`Seleccionar a ${m.employee.fullName}`}
+                    />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium">
+                      {m.employee.fullName}
+                      {!m.employee.active && <span className="ml-1 text-xs text-slate-400">(inactivo)</span>}
+                    </span>
+                    <span className="block text-xs text-slate-500">{m.employee.position}</span>
+                  </span>
+                  <span className="text-right text-xs tabular-nums text-slate-600">
+                    {formatDayKeyNumeric(m.startDate)} → {m.endDate ? formatDayKeyNumeric(m.endDate) : 'sin fin'}
+                  </span>
+                  {m.endDate === today ? (
+                    <Badge tone="amber">Termina hoy</Badge>
+                  ) : (
+                    <Badge tone={m.status === 'CURRENT' ? 'brand' : 'sky'}>{m.status === 'CURRENT' ? 'Vigente' : 'Próximo'}</Badge>
+                  )}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </Modal>
   );
 }

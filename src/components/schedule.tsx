@@ -3,7 +3,6 @@ import { cn } from '@/lib/styles';
 import type { DayPlan, Schedule } from '@/lib/types';
 import { shiftHours, WEEKDAYS_LONG, WEEKDAYS_SHORT } from '@/lib/schedule';
 
-/** Paleta estable por turno para distinguirlos de un vistazo en las cuadrículas. */
 const palette = [
   'bg-brand-50 text-brand-800 ring-brand-700/10',
   'bg-[#e6fafc] text-[#05707a] ring-[#09d1e0]/20 dark:bg-[#06343a] dark:text-[#7ee8f2]',
@@ -17,7 +16,6 @@ function shiftColor(shiftId: string, order: string[]) {
   return palette[(i < 0 ? 0 : i) % palette.length];
 }
 
-/** Cuadrícula de 7 días de una plantilla. */
 export function WeekGrid({ schedule, shiftOrder, compact }: { schedule: Pick<Schedule, 'days'>; shiftOrder: string[]; compact?: boolean }) {
   return (
     <div className="grid grid-cols-7 gap-1" role="list" aria-label="Turnos de la semana">
@@ -51,7 +49,6 @@ export function WeekGrid({ schedule, shiftOrder, compact }: { schedule: Pick<Sch
   );
 }
 
-/** Texto del plan de un día: "Tarde 11:00–21:00", "Descanso" o "Sin horario". */
 export function PlanLabel({ plan, withSchedule }: { plan: DayPlan; withSchedule?: boolean }) {
   if (plan.kind === 'WORK' && plan.shift) {
     return (

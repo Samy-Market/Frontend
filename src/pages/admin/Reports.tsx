@@ -38,7 +38,6 @@ export default function Reports() {
   const report = useAttendanceReport({ from, to, employeeId: employeeId || undefined, siteId: siteId || undefined }, validRange);
   const data = report.data;
 
-  // El Excel es mensual: una hoja de resumen y una hoja por colaborador con todos los días del mes.
   const [month, setMonth] = useState(() => todayKey().slice(0, 7));
   const exportXlsx = async () => {
     if (!month) return;
@@ -359,14 +358,12 @@ function daysAgo(n: number) {
   return dt.toISOString().slice(0, 10);
 }
 
-/** "2026-11" → { from: "2026-11-01", to: "2026-11-30" }. */
 function monthRange(month: string) {
   const [y, m] = month.split('-').map(Number);
   const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
   return { from: `${month}-01`, to: `${month}-${String(last).padStart(2, '0')}` };
 }
 
-/** "2026-11" → "noviembre de 2026". */
 function monthLabel(month: string) {
   const [y, m] = month.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('es-EC', { month: 'long', year: 'numeric', timeZone: 'UTC' });

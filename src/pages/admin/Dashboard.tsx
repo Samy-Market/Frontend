@@ -48,7 +48,6 @@ export default function Dashboard() {
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
-  // Actualización inmediata con el payload del evento; luego se revalida contra el servidor.
   useSocketEvent<AttendanceMarkedEvent>('attendance:marked', (ev) => {
     qc.setQueryData<TodayResponse>(qk.today, (prev) => {
       if (!prev) return prev;
@@ -70,7 +69,6 @@ export default function Dashboard() {
   });
 
   const data = todayQ.data;
-  // Filtro de sede: según dónde trabaja HOY (incluye a los trasladados a esa sede).
   const siteItems = useMemo(
     () => (data ? (siteId ? data.items.filter((i) => i.todaySite.site.id === siteId) : data.items) : []),
     [data, siteId],
@@ -314,7 +312,6 @@ function computeTotals(items: TodayItem[]): TodayResponse['totals'] {
   };
 }
 
-/** Aviso de rotaciones que terminan en 14 días sin un horario siguiente. */
 function RotationAlert() {
   const q = useExpiring(14);
   const n = q.data?.length ?? 0;

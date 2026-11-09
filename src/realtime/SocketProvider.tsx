@@ -11,11 +11,6 @@ import { ConnectionState, SocketContext } from './socket';
 
 const statusLabel = { APPROVED: 'aprobada', REJECTED: 'rechazada', PENDING: 'pendiente' } as const;
 
-/**
- * Mantiene la conexión Socket.IO mientras hay sesión. El socket solo notifica:
- * los eventos invalidan las consultas y, al (re)conectar, se vuelve a pedir todo
- * al servidor porque la base de datos es la fuente de verdad.
- */
 export function SocketProvider({ children }: { children: ReactNode }) {
   const { token, user } = useAuth();
   const qc = useQueryClient();
@@ -25,7 +20,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   const role = user?.role;
   const myEmployeeId = user?.employee?.id;
 
-  // Un socket por sesión; se crea sin conectar y el efecto lo conecta y desconecta.
   const socket = useMemo<Socket | null>(
     () =>
       token
@@ -39,7 +33,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         : null,
     [token],
   );
-  // El estado guardado pertenece a un socket concreto; si el socket cambió, aún está "conectando".
   const [status, setStatus] = useState<{ socket: Socket | null; state: ConnectionState }>({ socket: null, state: 'offline' });
   const state: ConnectionState = !socket ? 'offline' : status.socket === socket ? status.state : 'connecting';
 
@@ -65,7 +58,6 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         void qc.invalidateQueries({ queryKey: ['reports'] });
       }
       if (ev.employee.id === myEmployeeId) {
-        // Marcación hecha desde otro dispositivo del mismo empleado.
         qc.setQueryData(qk.myStatus, ev.status);
         void qc.invalidateQueries({ queryKey: qk.myMonthAll });
       }

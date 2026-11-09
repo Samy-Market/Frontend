@@ -1,3 +1,6 @@
+import { EMAIL_MAX, emailProblem, PASSWORD_MAX, PASSWORD_MIN } from '@/lib/field-rules';
+import { PasswordInput } from '@/components/PasswordInput';
+import { passwordProblems } from '@/lib/password';
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/auth';
@@ -7,14 +10,15 @@ import { ThemeCycleButton } from '@/components/ThemeToggle';
 import { Button, Field, inputClass } from '@/components/ui';
 import { ApiError, errorMessage } from '@/lib/api';
 
-/** Se muestra en lugar del login mientras el sistema no tenga ningún administrador. */
 export default function InitialSetup({ requiresCode, onAlreadyConfigured }: { requiresCode: boolean; onAlreadyConfigured: () => void }) {
   const { setupAdmin } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [revealed, setRevealed] = useState(false);
   const [confirm, setConfirm] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
   const [siteName, setSiteName] = useState('');
   const [code, setCode] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
@@ -23,19 +27,24 @@ export default function InitialSetup({ requiresCode, onAlreadyConfigured }: { re
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const local: string[] = [];
-    if (password.length < 8) local.push('La contraseña debe tener al menos 8 caracteres.');
-    if (password !== confirm) local.push('Las contraseñas no coinciden.');
+    const emailIssue = emailProblem(email);
+    if (emailIssue) local.push(emailIssue);
+    local.push(...passwordProblems(password, confirm, { required: true }));
     if (requiresCode && !code.trim()) local.push('Ingresa el código de instalación.');
     if (local.length) return setErrors(local);
 
     setErrors([]);
     setLoading(true);
     try {
-      await setupAdmin({ email, password, siteName: siteName.trim() || undefined, code: requiresCode ? code.trim() : undefined });
+      await setupAdmin({
+        email: email.trim(),
+        password,
+        siteName: siteName.trim() || undefined,
+        code: requiresCode ? code.trim() : undefined,
+      });
       toast.success('¡Sistema configurado!', 'Ya eres administrador. Empieza creando los turnos y los empleados.');
       void navigate('/admin', { replace: true });
     } catch (err) {
-      // Otra persona terminó la configuración primero: volver al login normal.
       if (err instanceof ApiError && err.status === 403 && err.message.includes('ya tiene un administrador')) {
         toast.info('El sistema ya está configurado', 'Inicia sesión con tu usuario.');
         onAlreadyConfigured();
@@ -62,11 +71,16 @@ export default function InitialSetup({ requiresCode, onAlreadyConfigured }: { re
           noValidate
           className="animate-fade-up space-y-4 rounded-[26px] bg-slate-50 p-6 dark:bg-white [animation-delay:200ms]"
         >
-          <Field label="Correo del administrador" htmlFor="s-email">
+          <Field label="Correo del administrador" htmlFor="s-email" error={emailTouched ? (emailProblem(email) ?? undefined) : undefined}>
             <input
               id="s-email"
               type="email"
+              inputMode="email"
               autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              maxLength={EMAIL_MAX}
+              onBlur={() => setEmailTouched(true)}
               required
               className={inputClass}
               value={email}
@@ -75,24 +89,27 @@ export default function InitialSetup({ requiresCode, onAlreadyConfigured }: { re
             />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Contraseña" htmlFor="s-pass" hint="Mínimo 8 caracteres.">
-              <input
+            <Field label="Contraseña" htmlFor="s-pass" hint={`De ${PASSWORD_MIN} a ${PASSWORD_MAX} caracteres.`}>
+              <PasswordInput
                 id="s-pass"
-                type="password"
                 autoComplete="new-password"
+                limit={PASSWORD_MAX}
                 required
-                className={inputClass}
+                warnCapsLock
+                revealed={revealed}
+                onRevealedChange={setRevealed}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </Field>
             <Field label="Repite la contraseña" htmlFor="s-pass2">
-              <input
+              <PasswordInput
                 id="s-pass2"
-                type="password"
                 autoComplete="new-password"
+                limit={PASSWORD_MAX}
                 required
-                className={inputClass}
+                revealed={revealed}
+                onRevealedChange={setRevealed}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
               />

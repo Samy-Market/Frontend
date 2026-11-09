@@ -1,3 +1,6 @@
+import { EMAIL_MAX, emailProblem, PASSWORD_MAX, PASSWORD_MIN } from '@/lib/field-rules';
+import { PasswordInput } from '@/components/PasswordInput';
+import { generatePassword, passwordProblems } from '@/lib/password';
 import { FormEvent, useState } from 'react';
 import { formKey } from '@/lib/form';
 import { PageHeader } from './AdminLayout';
@@ -25,7 +28,6 @@ import type { StaffUser } from '@/lib/types';
 
 const roleLabel = { ADMIN: 'Administrador', SUPERVISOR: 'Supervisor' } as const;
 
-/** Usuarios del personal: administradores y supervisores (los empleados se gestionan en Empleados). */
 export default function Users() {
   const { user: me } = useAuth();
   const list = useStaffUsers();
@@ -123,23 +125,28 @@ function UserForm({ user, isSelf, onClose }: { user: StaffUser | 'new' | null; i
   const [form, setForm] = useState(() =>
     user && user !== 'new' ? { email: user.email, role: user.role, active: user.active, password: '', confirm: '' } : empty,
   );
+  const [revealed, setRevealed] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const save = useSaveStaffUser();
   const toast = useToast();
+  const [emailTouched, setEmailTouched] = useState(false);
+  const emailError = emailTouched ? emailProblem(form.email) : null;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const local: string[] = [];
     const pass = form.password ?? '';
-    if (isNew && pass.length < 8) local.push('La contraseña debe tener al menos 8 caracteres.');
-    if (!isNew && pass && pass.length < 8) local.push('La nueva contraseña debe tener al menos 8 caracteres.');
-    if (pass && pass !== form.confirm) local.push('Las contraseñas no coinciden.');
-    if (local.length) return setErrors(local);
+    const email = emailProblem(form.email);
+    if (email) local.push(email);
+    local.push(...passwordProblems(pass, form.confirm, { required: isNew }));
+    if (local.length) {
+      setEmailTouched(true);
+      return setErrors(local);
+    }
 
-    const data: Partial<StaffUserInput> = { email: form.email, role: form.role, active: form.active };
+    const data: Partial<StaffUserInput> = { email: form.email.trim(), role: form.role, active: form.active };
     if (pass) data.password = pass;
     if (isSelf) {
-      // El backend no permite cambiar el propio rol ni desactivarse.
       delete data.role;
       delete data.active;
     }
@@ -172,15 +179,22 @@ function UserForm({ user, isSelf, onClose }: { user: StaffUser | 'new' | null; i
       }
     >
       <form id="user-form" onSubmit={submit} className="space-y-4" noValidate>
-        <Field label="Correo" htmlFor="u-email">
+        <Field label="Correo" htmlFor="u-email" error={emailError ?? undefined}>
           <input
             id="u-email"
             type="email"
+            inputMode="email"
             required
             autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={EMAIL_MAX}
+            aria-invalid={!!emailError}
             className={inputClass}
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onBlur={() => setEmailTouched(true)}
+            placeholder="nombre@empresa.com"
           />
         </Field>
         <Field label="Rol" htmlFor="u-role" hint={isSelf ? 'No puedes cambiar tu propio rol.' : undefined}>
@@ -199,28 +213,41 @@ function UserForm({ user, isSelf, onClose }: { user: StaffUser | 'new' | null; i
           <Field
             label={isNew ? 'Contraseña' : 'Nueva contraseña'}
             htmlFor="u-pass"
-            hint={isNew ? 'Mínimo 8 caracteres.' : 'Déjala vacía para no cambiarla.'}
+            hint={isNew ? `De ${PASSWORD_MIN} a ${PASSWORD_MAX} caracteres.` : 'Déjala vacía para no cambiarla.'}
           >
-            <input
+            <PasswordInput
               id="u-pass"
-              type="password"
               autoComplete="new-password"
-              className={inputClass}
+              limit={PASSWORD_MAX}
+              revealed={revealed}
+              onRevealedChange={setRevealed}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </Field>
           <Field label="Repite la contraseña" htmlFor="u-pass2">
-            <input
+            <PasswordInput
               id="u-pass2"
-              type="password"
               autoComplete="new-password"
-              className={inputClass}
+              limit={PASSWORD_MAX}
+              revealed={revealed}
+              onRevealedChange={setRevealed}
               value={form.confirm}
               onChange={(e) => setForm({ ...form, confirm: e.target.value })}
             />
           </Field>
         </div>
+        <button
+          type="button"
+          className="-mt-2 text-sm font-medium text-brand-700 hover:underline"
+          onClick={() => {
+            const generated = generatePassword();
+            setForm({ ...form, password: generated, confirm: generated });
+            setRevealed(true);
+          }}
+        >
+          Generar una contraseña
+        </button>
         {!isSelf && (
           <div className="flex items-center gap-2">
             <input

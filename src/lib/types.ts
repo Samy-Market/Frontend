@@ -23,6 +23,7 @@ export interface Me {
     position: string;
     site: { id: string; name: string };
   } | null;
+  session?: { idleMinutes: number };
 }
 
 export interface LoginResponse {
@@ -34,20 +35,15 @@ export interface EmployeeDayStatus {
   status: PresenceStatus;
   nextType: MarkType;
   lastMark: { id: string; type: MarkType; timestamp: string } | null;
-  /** Ingreso que cuenta hoy (la hora de entrada del turno si llegó antes). */
   firstInToday: string | null;
-  /** Minutos que llegó antes de su hora de entrada (no suman horas). */
   preEntryMinutesToday: number;
-  /** Desde cuándo corre el contador de la jornada en curso. */
   countingFrom: string | null;
   workedMinutesToday: number;
   openSession: boolean;
   isLate: boolean;
   lateMinutes: number;
   missingAfterStart: boolean;
-  /** Qué le toca hoy según su horario rotativo. */
   todayPlan: DayPlan;
-  /** Sede donde trabaja hoy (base o traslado). */
   todaySite: DaySite;
 }
 
@@ -84,7 +80,6 @@ export interface Transfer {
   status: 'PAST' | 'CURRENT' | 'UPCOMING';
 }
 
-/** Plan de un día: trabajar con un turno, descansar o sin horario asignado. */
 export interface DayPlan {
   date: string;
   kind: 'WORK' | 'REST' | 'UNASSIGNED';
@@ -143,7 +138,6 @@ export interface DaySummary {
 
 export interface MonthDay extends DaySummary {
   plan: DayPlan;
-  /** Día de trabajo ya pasado sin marcaciones. */
   absent: boolean;
 }
 
@@ -228,11 +222,9 @@ export interface ScheduleSummary {
 }
 
 export interface Shift extends ShiftSummary {
-  /** Horarios que usan este turno. */
   schedules?: { id: string; name: string }[];
 }
 
-/** Plantilla semanal (1 = lunes … 7 = domingo; shift null = descanso). */
 export interface Schedule {
   id: string;
   name: string;
@@ -251,6 +243,20 @@ export interface Assignment {
   status: 'PAST' | 'CURRENT' | 'UPCOMING';
 }
 
+export interface ScheduleMember {
+  id: string;
+  employee: { id: string; fullName: string; position: string; active: boolean };
+  startDate: string;
+  endDate: string | null;
+  status: 'PAST' | 'CURRENT' | 'UPCOMING';
+}
+
+export interface UnassignResult {
+  deleted: number;
+  ended: number;
+  skipped: number;
+}
+
 export interface ExpiringAssignment {
   assignmentId: string;
   employee: { id: string; fullName: string };
@@ -266,7 +272,6 @@ export interface AssignResult {
 
 export interface ReportTotals {
   workedMinutes: number;
-  /** Después de la hora de salida del turno, o todo lo trabajado en un día de descanso. */
   overtimeMinutes: number;
   daysWorked: number;
   lateDays: number;
@@ -299,7 +304,6 @@ export interface EmployeeReport {
   employee: { id: string; fullName: string; documentId: string; position: string; active: boolean; schedules: string[]; homeSite: SiteRef };
   totals: ReportTotals;
   days: ReportDay[];
-  /** Todos los días del rango hasta hoy con lo que le tocaba. */
   calendar: DayPlan[];
 }
 

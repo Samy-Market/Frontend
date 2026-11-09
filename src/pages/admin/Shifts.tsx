@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { formKey } from '@/lib/form';
+import { ConfirmDelete } from '@/components/ConfirmDelete';
 import { PageHeader } from './AdminLayout';
 import { useAuth } from '@/auth/auth';
 import { useToast } from '@/components/toast';
@@ -22,6 +23,7 @@ import { ApiError, errorMessage } from '@/lib/api';
 import type { Shift } from '@/lib/types';
 
 export default function Shifts() {
+  const deleteShift = useDeleteShift();
   const { user } = useAuth();
   const canEdit = user?.role === 'ADMIN';
   const list = useShifts();
@@ -88,7 +90,16 @@ export default function Shifts() {
                       <Button variant="ghost" size="sm" onClick={() => setEditing(s)} aria-label={`Editar turno ${s.name}`}>
                         Editar
                       </Button>
-                      <DeleteShiftButton id={s.id} name={s.name} inUse={!!s.schedules?.length} />
+                      <ConfirmDelete
+                        what="turno"
+                        name={s.name}
+                        blockedReason={
+                          s.schedules?.length
+                            ? `Se usa en ${s.schedules.length === 1 ? 'el horario' : 'los horarios'} ${s.schedules.map((x) => `"${x.name}"`).join(', ')}. Quítalo de esos horarios primero.`
+                            : null
+                        }
+                        onDelete={() => deleteShift.mutateAsync(s.id)}
+                      />
                     </td>
                   )}
                 </tr>
@@ -204,50 +215,5 @@ function ShiftForm({ shift, onClose }: { shift: Shift | 'new' | null; onClose: (
         )}
       </form>
     </Modal>
-  );
-}
-
-function DeleteShiftButton({ id, name, inUse }: { id: string; name: string; inUse: boolean }) {
-  const del = useDeleteShift();
-  const toast = useToast();
-  const [confirm, setConfirm] = useState(false);
-  if (inUse) return null;
-  return (
-    <>
-      <Button variant="ghost" size="sm" className="text-red-700" onClick={() => setConfirm(true)} aria-label={`Eliminar turno ${name}`}>
-        Eliminar
-      </Button>
-      <Modal
-        open={confirm}
-        onClose={() => setConfirm(false)}
-        title="Eliminar turno"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setConfirm(false)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="danger"
-              loading={del.isPending}
-              onClick={() =>
-                del.mutate(id, {
-                  onSuccess: () => {
-                    toast.success('Turno eliminado', name);
-                    setConfirm(false);
-                  },
-                  onError: (err) => toast.error('No se pudo eliminar', errorMessage(err)),
-                })
-              }
-            >
-              Eliminar
-            </Button>
-          </>
-        }
-      >
-        <p className="text-sm">
-          ¿Eliminar el turno <strong>{name}</strong>? No lo usa ningún horario.
-        </p>
-      </Modal>
-    </>
   );
 }

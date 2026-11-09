@@ -35,7 +35,6 @@ export function useMark() {
       void qc.invalidateQueries({ queryKey: qk.myMonthAll });
     },
     onError: () => {
-      // El estado local pudo quedar desfasado (p. ej. marcó desde otro dispositivo).
       void qc.invalidateQueries({ queryKey: qk.myStatus });
     },
   });

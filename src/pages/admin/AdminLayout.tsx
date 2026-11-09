@@ -9,10 +9,6 @@ import { useSocket } from '@/realtime/socket';
 
 type NavItem = { to: string; label: string; icon: string; end?: boolean; badge?: boolean; adminOnly?: boolean; step?: number };
 
-/**
- * Menú agrupado en el orden en que se usa el sistema:
- * primero se configura (sedes → turnos → horarios → empleados) y luego se opera.
- */
 const sections: { title?: string; items: NavItem[] }[] = [
   { items: [{ to: '/admin', label: 'Dashboard', end: true, icon: 'M3 12h7V3H3v9Zm0 9h7v-6H3v6Zm11 0h7v-9h-7v9Zm0-18v6h7V3h-7Z' }] },
   {
@@ -159,7 +155,7 @@ export default function AdminLayout() {
           </button>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8">
-          {/* La clave por ruta reinicia la animación de entrada al cambiar de sección. */}
+          {}
           <div key={location.pathname} className="animate-fade-up">
             <Outlet />
           </div>

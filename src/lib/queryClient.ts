@@ -11,7 +11,6 @@ export const queryClient = new QueryClient({
   },
 });
 
-/** Claves de consulta centralizadas para invalidarlas desde los eventos en vivo. */
 export const qk = {
   me: ['me'] as const,
   myStatus: ['attendance', 'me', 'status'] as const,
@@ -29,6 +28,7 @@ export const qk = {
   transfers: (scope: string) => ['transfers', scope] as const,
   transfersAll: ['transfers'] as const,
   expiring: (days: number) => ['schedules', 'expiring', days] as const,
+  scheduleMembers: (scheduleId: string) => ['schedules', 'members', scheduleId] as const,
   assignments: (employeeId: string) => ['assignments', employeeId] as const,
   assignmentsAll: ['assignments'] as const,
   mySchedule: ['attendance', 'me', 'schedule'] as const,

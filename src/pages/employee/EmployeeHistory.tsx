@@ -23,7 +23,6 @@ export default function EmployeeHistory() {
   const justQ = useMyJustifications();
   const [justifying, setJustifying] = useState<MarkRecord | null>(null);
 
-  // Última justificación por marcación.
   const byAttendance = useMemo(() => {
     const map = new Map<string, Justification>();
     for (const j of justQ.data ?? []) if (!map.has(j.attendanceId)) map.set(j.attendanceId, j);

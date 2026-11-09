@@ -28,7 +28,6 @@ function Icon({ d }: { d: string }) {
   );
 }
 
-/** Control segmentado Claro / Oscuro / Sistema (estilo iOS). */
 export function ThemeSegmented({ className }: { className?: string }) {
   const { pref, setPref } = useTheme();
   return (
@@ -53,7 +52,6 @@ export function ThemeSegmented({ className }: { className?: string }) {
   );
 }
 
-/** Botón compacto que alterna Sistema → Claro → Oscuro (para cabeceras pequeñas). */
 export function ThemeCycleButton({ className }: { className?: string }) {
   const { pref, setPref } = useTheme();
   const i = options.findIndex((o) => o.value === pref);

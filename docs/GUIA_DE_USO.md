@@ -100,7 +100,7 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 - **Traslados**: cuando por una emergencia o una orden alguien debe trabajar en otra sede, el jefe pulsa **"Registrar traslado"** y elige la sede de destino, las fechas (hay botones rápidos: "Solo hoy", "3 días", "1 semana"), el motivo y las personas.
   - **El empleado no tiene que hacer nada**: marca normal y su marcación queda en la otra sede.
   - Al terminar las fechas vuelve solo a su sede. Si la emergencia acaba antes, se pulsa **"Terminar ahora"**.
-- Solo el administrador crea y edita sedes. Una sede con historial no se borra, solo se desactiva.
+- Solo el administrador crea, edita y **elimina** sedes. Una sede no se puede eliminar si es la sede base de algún empleado (primero se cambian de sede) ni si ya tiene marcaciones o traslados: en ese caso se desactiva.
 
 ### 2. Turnos
 
@@ -108,7 +108,7 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 
 - Cada turno tiene una **tolerancia**: los minutos de gracia antes de contar atraso. Con tolerancia de 10 minutos, llegar 08:10 no es atraso; llegar 08:11 sí, y se cuentan 11 minutos.
 - Si alguien llega **antes** de su hora de entrada, esos minutos quedan como **preingreso**: se ven en el dashboard, el historial y los reportes, pero **no suman horas**. Las horas se cuentan desde la hora de entrada del turno.
-- La columna "Usado en" dice qué horarios usan cada turno.
+- La columna "Usado en" dice qué horarios usan cada turno. Un turno solo se puede **eliminar** si ningún horario lo usa.
 
 ### 3. Horarios
 
@@ -117,6 +117,8 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 - Ejemplo, "Rotación A": lunes Mañana, martes Tarde, miércoles Mañana… domingo Libre.
 - Se ve como una tira de 7 días con colores.
 - **"Asignar a empleados"**: eliges el horario, desde qué fecha y por cuánto tiempo (1, 3 o 6 meses), y marcas a las personas. Si alguien ya tenía otro horario, el anterior **termina solo** el día anterior. Así funcionan las **rotaciones cada 3 meses**.
+- **"Ver asignados"**: muestra quién tiene ese horario hoy o más adelante. Se pueden marcar varias personas y pulsar **"Quitar del horario"**: si la asignación empieza hoy o más adelante, se borra; si ya venía de antes, la conserva hasta hoy y desde mañana queda sin ese horario. Las marcaciones no se tocan.
+- Un horario solo se puede **eliminar** si nunca se asignó. Si tiene personas asignadas, primero se quitan; si ya se usó en el pasado, se desactiva.
 - **Rotaciones por terminar**: un aviso amarillo con quiénes terminan su horario pronto y aún no tienen el siguiente, con un botón para asignarlo de una vez.
 
 ### 4. Empleados
@@ -124,8 +126,12 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 **Es la lista del equipo.**
 
 - Para crear a alguien: nombre, correo, cédula, cargo, **sede** y una contraseña inicial que se le entrega al trabajador.
+  - **Cédula**: debe ser una cédula ecuatoriana real de 10 dígitos. Solo acepta números, no deja escribir más de 10 y revisa el dígito verificador, así detecta un número mal tipeado. Si se pega con guiones o espacios, se limpian solos.
+  - **Correo**: debe tener la forma nombre@empresa.com (con dominio y extensión), hasta 100 caracteres.
+  - **Contraseña**: de 8 a 15 caracteres, sin espacios al inicio ni al final. Se escribe dos veces y un contador muestra cuántos caracteres lleva.
 - La columna **Horario** muestra qué horario sigue y hasta cuándo. Al hacer clic se ve su historial de horarios.
-- **Activo / Inactivo**: un empleado inactivo ya no puede entrar ni marcar. No se borra, para no perder su historial.
+- **Activo / Inactivo**: un empleado inactivo ya no puede entrar ni marcar.
+- **Eliminar**: solo para quien se creó por error. No se puede si tiene un horario asignado (primero se quita) ni si ya tiene marcaciones o historial: en ese caso se desactiva, para no perder su asistencia. Al eliminarlo también se borra su usuario de acceso.
 - Los supervisores solo pueden mirar; el administrador edita.
 
 ### Justificaciones
@@ -183,6 +189,17 @@ Se registra normalmente y no cuenta como atraso.
 
 **¿Cuándo se cuenta una ausencia?**
 Cuando un día de trabajo **ya pasó** y la persona no marcó nada. El día de hoy nunca cuenta como ausencia mientras no termine.
+
+**Creé un empleado y no puede entrar con su contraseña. ¿Qué reviso?**
+La contraseña se guarda tal cual se escribe (de 8 a 15 caracteres), y respeta mayúsculas y minúsculas. Al crearla hay que escribirla dos veces; con el ícono del ojo 👁 se puede ver lo escrito, y "Generar una contraseña" crea una fácil de dictar (por ejemplo "Kmrt-4827"). En el ingreso, la app avisa si Bloq Mayús está activado.
+
+**¿La sesión se cierra sola?**
+Sí, por seguridad:
+
+- **Por inactividad**: 30 minutos sin usar la app para administradores y supervisores, y 10 minutos para empleados. Un minuto antes aparece el aviso "¿Sigues ahí?" con el botón "Seguir conectado".
+- **Por tiempo máximo**: 8 horas después de iniciar sesión, aunque se esté usando.
+
+Si la pantalla del dashboard se deja abierta como tablero, también se cerrará por inactividad. Los tiempos se pueden cambiar en la configuración del servidor.
 
 **¿Se puede instalar como una app?**
 Sí. En el celular, abre la página y elige **"Agregar a pantalla de inicio"**. Queda con el ícono de SAMY, como cualquier app.

@@ -1,5 +1,9 @@
 import { FormEvent, useState } from 'react';
 import { formKey } from '@/lib/form';
+import { ConfirmDelete } from '@/components/ConfirmDelete';
+import { PasswordInput } from '@/components/PasswordInput';
+import { generatePassword, passwordProblems } from '@/lib/password';
+import { CEDULA_LENGTH, cedulaProblem, EMAIL_MAX, emailProblem, onlyCedulaDigits, PASSWORD_MAX, PASSWORD_MIN } from '@/lib/field-rules';
 import { PageHeader } from './AdminLayout';
 import { useAuth } from '@/auth/auth';
 import { useToast } from '@/components/toast';
@@ -19,7 +23,7 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/styles';
 import { Link } from 'react-router-dom';
-import { EmployeeInput, useEmployees, useSaveEmployee, useSites } from '@/hooks/admin';
+import { EmployeeInput, useDeleteEmployee, useEmployees, useSaveEmployee, useSites } from '@/hooks/admin';
 import { EmployeeSchedulesModal, ScheduleCell } from './EmployeeSchedules';
 import { useDebounced } from '@/hooks/useDebounced';
 import { ApiError, errorMessage } from '@/lib/api';
@@ -28,6 +32,7 @@ import type { Employee } from '@/lib/types';
 type ActiveFilter = 'true' | 'false' | 'all';
 
 export default function Employees() {
+  const deleteEmployee = useDeleteEmployee();
   const { user } = useAuth();
   const canEdit = user?.role === 'ADMIN';
   const [q, setQ] = useState('');
@@ -158,9 +163,17 @@ export default function Employees() {
                   </td>
                   {canEdit && (
                     <td className={cn(tdClass, 'text-right')}>
-                      <Button variant="ghost" size="sm" onClick={() => setEditing(e)} aria-label={`Editar a ${e.fullName}`}>
-                        Editar
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => setEditing(e)} aria-label={`Editar a ${e.fullName}`}>
+                          Editar
+                        </Button>
+                        <ConfirmDelete what="empleado" name={e.fullName} onDelete={() => deleteEmployee.mutateAsync(e.id)}>
+                          <p className="text-slate-500">
+                            También se elimina su usuario de acceso ({e.user.email}). Solo se puede eliminar un empleado sin horario,
+                            marcaciones ni historial; si ya trabajó, desactívalo.
+                          </p>
+                        </ConfirmDelete>
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -180,7 +193,6 @@ const empty: EmployeeInput = { fullName: '', email: '', documentId: '', position
 
 function EmployeeForm({ employee, onClose }: { employee: Employee | 'new' | null; onClose: () => void }) {
   const isNew = employee === 'new';
-  // Se vuelve a montar (key) cada vez que se abre, así el formulario arranca limpio.
   const [form, setForm] = useState<EmployeeInput>(() =>
     employee && employee !== 'new'
       ? {
@@ -194,6 +206,11 @@ function EmployeeForm({ employee, onClose }: { employee: Employee | 'new' | null
         }
       : empty,
   );
+  const [confirm, setConfirm] = useState('');
+  const [revealed, setRevealed] = useState(false);
+  const [touched, setTouched] = useState({ email: false, doc: false });
+  const docError = touched.doc || form.documentId.length === CEDULA_LENGTH ? cedulaProblem(form.documentId) : null;
+  const emailError = touched.email ? emailProblem(form.email) : null;
   const [errors, setErrors] = useState<string[]>([]);
   const save = useSaveEmployee();
   const sites = useSites();
@@ -204,19 +221,27 @@ function EmployeeForm({ employee, onClose }: { employee: Employee | 'new' | null
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const local: string[] = [];
-    if (!/^\d{10}(\d{3})?$/.test(form.documentId.trim())) local.push('La cédula debe tener 10 dígitos (o 13 si es RUC).');
+    const email = emailProblem(form.email);
+    if (email) local.push(email);
+    const doc = cedulaProblem(form.documentId);
+    if (doc) local.push(doc);
     if (!form.siteId) local.push('Selecciona la sede del empleado.');
-    if (isNew && (form.password ?? '').length < 8) local.push('La contraseña debe tener al menos 8 caracteres.');
-    if (!isNew && form.password && form.password.length < 8) local.push('La nueva contraseña debe tener al menos 8 caracteres.');
-    if (local.length) return setErrors(local);
+    local.push(...passwordProblems(form.password ?? '', confirm, { required: isNew }));
+    if (local.length) {
+      setTouched({ email: true, doc: true });
+      return setErrors(local);
+    }
 
-    const data: Partial<EmployeeInput> = { ...form };
+    const data: Partial<EmployeeInput> = { ...form, email: form.email.trim() };
     if (!data.password) delete data.password;
     save.mutate(
       { id: isNew ? undefined : (employee as Employee).id, data },
       {
         onSuccess: (res) => {
-          toast.success(isNew ? 'Empleado creado' : 'Cambios guardados', res.fullName);
+          toast.success(
+            isNew ? 'Empleado creado' : 'Cambios guardados',
+            data.password ? `${res.fullName} ya puede entrar con ${res.user.email} y la contraseña indicada.` : res.fullName,
+          );
           onClose();
         },
         onError: (err) => setErrors(err instanceof ApiError && err.details ? err.details : [errorMessage(err)]),
@@ -247,25 +272,36 @@ function EmployeeForm({ employee, onClose }: { employee: Employee | 'new' | null
             <input id="f-name" required className={inputClass} value={form.fullName} onChange={(e) => set('fullName', e.target.value)} />
           </Field>
         </div>
-        <Field label="Correo" htmlFor="f-email">
+        <Field label="Correo" htmlFor="f-email" error={emailError ?? undefined}>
           <input
             id="f-email"
             type="email"
+            inputMode="email"
             required
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={EMAIL_MAX}
+            aria-invalid={!!emailError}
             className={inputClass}
             value={form.email}
             onChange={(e) => set('email', e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+            placeholder="nombre@empresa.com"
           />
         </Field>
-        <Field label="Cédula" htmlFor="f-doc">
+        <Field label="Cédula" htmlFor="f-doc" hint="10 dígitos, cédula ecuatoriana." error={docError ?? undefined}>
           <input
             id="f-doc"
             inputMode="numeric"
+            pattern="[0-9]*"
             required
-            maxLength={13}
+            // Sin maxLength: al pegar "0926-687-856" se quitan los guiones y luego se corta a 10.
+            aria-invalid={!!docError}
             className={inputClass}
             value={form.documentId}
-            onChange={(e) => set('documentId', e.target.value.replace(/\D/g, ''))}
+            onChange={(e) => set('documentId', onlyCedulaDigits(e.target.value))}
+            onBlur={() => setTouched((t) => ({ ...t, doc: true }))}
           />
         </Field>
         <Field label="Cargo" htmlFor="f-pos">
@@ -286,17 +322,47 @@ function EmployeeForm({ employee, onClose }: { employee: Employee | 'new' | null
         <Field
           label={isNew ? 'Contraseña inicial' : 'Nueva contraseña'}
           htmlFor="f-pass"
-          hint={isNew ? 'Mínimo 8 caracteres. Compártela con el empleado de forma segura.' : 'Déjala vacía para no cambiarla.'}
+          hint={
+            isNew
+              ? `De ${PASSWORD_MIN} a ${PASSWORD_MAX} caracteres. Compártela con el empleado de forma segura.`
+              : 'Déjala vacía para no cambiarla.'
+          }
         >
-          <input
+          <PasswordInput
             id="f-pass"
-            type="password"
             autoComplete="new-password"
-            className={inputClass}
+            limit={PASSWORD_MAX}
+            revealed={revealed}
+            onRevealedChange={setRevealed}
             value={form.password}
             onChange={(e) => set('password', e.target.value)}
           />
         </Field>
+        <Field label="Repite la contraseña" htmlFor="f-pass2">
+          <PasswordInput
+            id="f-pass2"
+            autoComplete="new-password"
+            limit={PASSWORD_MAX}
+            revealed={revealed}
+            onRevealedChange={setRevealed}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+          />
+        </Field>
+        <div className="-mt-2 sm:col-span-2">
+          <button
+            type="button"
+            className="text-sm font-medium text-brand-700 hover:underline"
+            onClick={() => {
+              const generated = generatePassword();
+              set('password', generated);
+              setConfirm(generated);
+              setRevealed(true);
+            }}
+          >
+            Generar una contraseña
+          </button>
+        </div>
         <div className="flex items-center gap-2 self-end pb-2">
           <input
             id="f-active"

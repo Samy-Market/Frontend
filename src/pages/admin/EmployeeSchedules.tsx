@@ -3,12 +3,11 @@ import { formKey } from '@/lib/form';
 import { AssignModal, AssignPreset } from './Schedules';
 import { useToast } from '@/components/toast';
 import { Badge, Button, ErrorState, inputClass, Modal, Spinner } from '@/components/ui';
-import { useDeleteAssignment, useEmployeeAssignments, useUpdateAssignment } from '@/hooks/admin';
+import { useUnassign, useEmployeeAssignments, useUpdateAssignment } from '@/hooks/admin';
 import { errorMessage } from '@/lib/api';
-import { daysUntil, formatDayKeyNumeric } from '@/lib/time';
+import { daysUntil, formatDayKeyNumeric, todayKey } from '@/lib/time';
 import type { Assignment, Employee } from '@/lib/types';
 
-/** Celda de la tabla de empleados: horario vigente, hasta cuándo y el siguiente. */
 export function ScheduleCell({ employee: e, onOpen }: { employee: Employee; onOpen: () => void }) {
   const cur = e.currentSchedule;
   const next = e.nextSchedule;
@@ -41,7 +40,6 @@ const statusView = {
   PAST: { label: 'Terminado', tone: 'slate' },
 } as const;
 
-/** Historial de rotaciones de un empleado, con acciones para terminar, ajustar o quitar. */
 export function EmployeeSchedulesModal({
   employee,
   canEdit,
@@ -97,7 +95,7 @@ export function EmployeeSchedulesModal({
 }
 
 function AssignmentRow({ a, canEdit, onEditEnd }: { a: Assignment; canEdit: boolean; onEditEnd: () => void }) {
-  const del = useDeleteAssignment();
+  const unassign = useUnassign();
   const toast = useToast();
   const view = statusView[a.status];
   return (
@@ -115,15 +113,24 @@ function AssignmentRow({ a, canEdit, onEditEnd }: { a: Assignment; canEdit: bool
           <Button size="sm" variant="secondary" onClick={onEditEnd}>
             Cambiar fin
           </Button>
-          {a.status === 'UPCOMING' && (
+          {(a.status === 'UPCOMING' || a.endDate !== todayKey()) && (
             <Button
               size="sm"
               variant="ghost"
               className="text-red-700"
-              loading={del.isPending}
+              loading={unassign.isPending}
+              title={
+                a.startDate >= todayKey()
+                  ? 'Se elimina porque empieza hoy o más adelante.'
+                  : 'Lo conserva hasta hoy; desde mañana queda sin este horario.'
+              }
               onClick={() =>
-                del.mutate(a.id, {
-                  onSuccess: () => toast.success('Horario quitado', `${a.schedule.name} ya no se aplicará.`),
+                unassign.mutate([a.id], {
+                  onSuccess: () =>
+                    toast.success(
+                      'Horario quitado',
+                      a.startDate >= todayKey() ? `${a.schedule.name} ya no se aplicará.` : `${a.schedule.name} termina hoy.`,
+                    ),
                   onError: (err) => toast.error('No se pudo quitar', errorMessage(err)),
                 })
               }

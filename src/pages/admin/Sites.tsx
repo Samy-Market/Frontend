@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { formKey } from '@/lib/form';
+import { ConfirmDelete } from '@/components/ConfirmDelete';
 import { PageHeader } from './AdminLayout';
 import { useAuth } from '@/auth/auth';
 import { useToast } from '@/components/toast';
@@ -21,6 +22,7 @@ import { addDaysKey, daysUntil, formatDayKeyNumeric, todayKey } from '@/lib/time
 import type { Site, Transfer } from '@/lib/types';
 
 export default function Sites() {
+  const deleteSite = useDeleteSite();
   const { user } = useAuth();
   const isAdmin = user?.role === 'ADMIN';
   const sites = useSites();
@@ -90,10 +92,23 @@ export default function Sites() {
                   </div>
                 </dl>
                 {isAdmin && (
-                  <div className="mt-auto">
+                  <div className="mt-auto flex gap-1">
                     <Button size="sm" variant="ghost" onClick={() => setEditing(s)}>
                       Editar
                     </Button>
+                    <ConfirmDelete
+                      what="sede"
+                      feminine
+                      name={s.name}
+                      blockedReason={
+                        s.activeEmployees
+                          ? `Es la sede base de ${s.activeEmployees} ${s.activeEmployees === 1 ? 'empleado' : 'empleados'}. Cámbialos de sede primero.`
+                          : null
+                      }
+                      onDelete={() => deleteSite.mutateAsync(s.id)}
+                    >
+                      <p className="text-slate-500">Solo se puede eliminar una sede sin empleados, marcaciones ni traslados.</p>
+                    </ConfirmDelete>
                   </div>
                 )}
               </Card>
@@ -115,14 +130,9 @@ export default function Sites() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Crear / editar sede (solo administrador)
-// ---------------------------------------------------------------------------
-
 function SiteForm({ site, onClose }: { site: Site | 'new' | null; onClose: () => void }) {
   const isNew = site === 'new';
   const save = useSaveSite();
-  const del = useDeleteSite();
   const toast = useToast();
   const [form, setForm] = useState<SiteInput>(() =>
     site && site !== 'new'
@@ -146,17 +156,6 @@ function SiteForm({ site, onClose }: { site: Site | 'new' | null; onClose: () =>
     );
   };
 
-  const remove = () =>
-    site &&
-    site !== 'new' &&
-    del.mutate(site.id, {
-      onSuccess: () => {
-        toast.success('Sede eliminada', site.name);
-        onClose();
-      },
-      onError: (err) => setErrors([errorMessage(err)]),
-    });
-
   return (
     <Modal
       open={!!site}
@@ -164,11 +163,6 @@ function SiteForm({ site, onClose }: { site: Site | 'new' | null; onClose: () =>
       title={isNew ? 'Nueva sede' : 'Editar sede'}
       footer={
         <>
-          {!isNew && (
-            <Button variant="ghost" className="mr-auto text-red-700" onClick={remove} loading={del.isPending}>
-              Eliminar
-            </Button>
-          )}
           <Button variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
@@ -227,10 +221,6 @@ function SiteForm({ site, onClose }: { site: Site | 'new' | null; onClose: () =>
     </Modal>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Traslados
-// ---------------------------------------------------------------------------
 
 const statusView = {
   CURRENT: { label: 'En curso', tone: 'brand' },
@@ -303,7 +293,6 @@ function TransferRow({ t }: { t: Transfer }) {
   const single = t.startDate === t.endDate;
   const today = todayKey();
 
-  // Terminar hoy: si empezó hoy, no hay "ayer" posible → se quita (el backend impide quitarlo si ya marcó).
   const finishNow = () => {
     if (t.startDate >= today) {
       del.mutate(t.id, {
@@ -357,7 +346,6 @@ function TransferForm({ open, sites, onClose }: { open: boolean; sites: Site[]; 
   const [q, setQ] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
 
-  // Solo se puede trasladar a quienes NO pertenecen a la sede de destino.
   const candidates = (employees.data ?? []).filter((e) => e.siteId !== siteId);
   const list = candidates.filter((e) => {
     const t = q.trim().toLowerCase();

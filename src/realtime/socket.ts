@@ -12,10 +12,8 @@ export const SocketContext = createContext<SocketCtx>({ socket: null, state: 'of
 
 export const useSocket = () => useContext(SocketContext);
 
-/** Suscribe un manejador a un evento del socket mientras el componente está montado. */
 export function useSocketEvent<T>(event: string, handler: (payload: T) => void) {
   const { socket } = useSocket();
-  // Siempre llama a la última versión del manejador sin volver a suscribirse en cada render.
   const onEvent = useEffectEvent((payload: T) => handler(payload));
   useEffect(() => {
     if (!socket) return;

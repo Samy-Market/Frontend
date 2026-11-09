@@ -1,6 +1,5 @@
 import { cn } from '@/lib/styles';
 
-/** Logo SAMY completo a color (azul + cian). En modo oscuro se usa la versión blanca para que se lea sobre negro. */
 export function Logo({ className }: { className?: string }) {
   return (
     <>
@@ -10,10 +9,6 @@ export function Logo({ className }: { className?: string }) {
   );
 }
 
-/**
- * Logo SAMY de un solo color: toma el color del texto (currentColor),
- * así sirve en negro sobre claro o en blanco sobre fondos oscuros.
- */
 function LogoMono({ className, mark }: { className?: string; mark?: boolean }) {
   const url = mark ? '/brand/samy-mark-mono.svg' : '/brand/samy-logo-mono.svg';
   return (
@@ -33,7 +28,6 @@ function LogoMono({ className, mark }: { className?: string; mark?: boolean }) {
   );
 }
 
-/** Solo la "S" a color. */
 export function Mark({ className }: { className?: string }) {
   return <img src="/brand/samy-mark.svg" alt="SAMY" className={cn('h-8 w-auto select-none', className)} draggable={false} />;
 }

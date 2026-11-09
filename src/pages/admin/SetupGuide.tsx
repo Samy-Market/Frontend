@@ -12,11 +12,6 @@ interface Step {
   detail?: string;
 }
 
-/**
- * Guía de configuración inicial para el administrador: muestra en orden lo que
- * hay que preparar antes de que los empleados empiecen a marcar.
- * Se oculta sola cuando todos los pasos están completos.
- */
 export function SetupGuide() {
   const sites = useSites();
   const shifts = useShifts();
@@ -76,7 +71,6 @@ export function SetupGuide() {
 
   const completed = steps.filter((s) => s.done).length;
   if (completed === steps.length) return null;
-  // El paso actual es el primero sin completar; los siguientes quedan en espera.
   const current = steps.findIndex((s) => !s.done);
 
   return (

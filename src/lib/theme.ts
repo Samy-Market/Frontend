@@ -18,7 +18,6 @@ function isDark(pref = getThemePref()) {
   return pref === 'dark' || (pref === 'system' && media().matches);
 }
 
-/** Aplica la clase .dark en <html> y ajusta el color de la barra del navegador / PWA. */
 export function applyTheme(pref = getThemePref()) {
   const dark = isDark(pref);
   const root = document.documentElement;
@@ -43,7 +42,6 @@ function subscribe(l: () => void) {
   return () => listeners.delete(l);
 }
 
-/** Preferencia actual + función para cambiarla. Sigue los cambios del sistema cuando está en "Sistema". */
 export function useTheme() {
   const pref = useSyncExternalStore(subscribe, getThemePref, (): ThemePref => 'system');
   useEffect(() => {

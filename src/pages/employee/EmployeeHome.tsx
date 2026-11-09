@@ -12,7 +12,6 @@ export default function EmployeeHome() {
   const now = useNow(1000);
   const statusQ = useMyStatus();
   const mark = useMark();
-  // Confirmación visual breve después de marcar.
   const [done, setDone] = useState<'IN' | 'OUT' | null>(null);
   useEffect(() => {
     if (!done) return;
@@ -26,8 +25,6 @@ export default function EmployeeHome() {
   const shift = plan?.kind === 'WORK' ? plan.shift : null;
   const inside = s?.status === 'INSIDE';
 
-  // Horas de hoy "en vivo": lo que calculó el servidor + lo transcurrido desde esa consulta.
-  // Con preingreso el contador no corre hasta la hora de entrada del turno.
   const countFrom = Math.max(statusQ.dataUpdatedAt, s?.countingFrom ? new Date(s.countingFrom).getTime() : 0);
   const liveMinutes =
     s && inside ? s.workedMinutesToday + Math.max(0, Math.floor((now.getTime() - countFrom) / 60_000)) : (s?.workedMinutesToday ?? 0);
@@ -70,7 +67,6 @@ export default function EmployeeHome() {
   }[s.status];
 
   const isIn = s.nextType === 'IN';
-  // Durante la confirmación se mantiene el color de la acción recién hecha.
   const blue = done ? done === 'IN' : isIn;
 
   return (
@@ -85,7 +81,7 @@ export default function EmployeeHome() {
 
       <section className="flex justify-center py-4">
         <div className="relative">
-          {/* Halo que "respira" mientras el botón está disponible */}
+          {}
           {!mark.isPending && !done && (
             <span aria-hidden className={cn('absolute inset-0 animate-halo rounded-full', blue ? 'bg-brand-700' : 'bg-ink')} />
           )}
@@ -241,7 +237,6 @@ function TodayShift({ plan, site }: { plan: import('@/lib/types').DayPlan | unde
   );
 }
 
-/** Horario de la semana actual (lunes a domingo). */
 function MyWeek() {
   const q = useMySchedule();
   if (!q.data) return null;

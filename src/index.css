@@ -1,16 +1,8 @@
 @import 'tailwindcss';
 
-/* El modo oscuro se activa con la clase .dark en <html> (la pone lib/theme.ts según la preferencia). */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/*
- * Sistema visual SAMY
- * - Colores tomados del logo: azul #0058E0, cian #09D1E0, azul marino #042977.
- * - Neutros al estilo Apple (grises puros, sin tinte azulado) para fondos, textos y bordes.
- * - Estados (verde, rojo, ámbar) apagados: se usan como texto o fondos muy suaves, nunca chillones.
- */
 @theme {
-  /* Marca */
   --color-brand-50: #eef4ff;
   --color-brand-100: #dce8fd;
   --color-brand-200: #b9d1fb;
@@ -21,12 +13,9 @@
   --color-brand-900: #042977;
   --color-accent: #09d1e0;
   --color-ink: #1d1d1f;
-  /* Texto sobre fondos de color (azul, rojo): siempre blanco. */
   --color-on-accent: #ffffff;
-  /* Texto sobre fondos "tinta" (negro en claro, blanco en oscuro). */
   --color-on-ink: #ffffff;
 
-  /* Neutros (reemplazan la escala "slate" en toda la app) */
   --color-slate-50: #f5f5f7;
   --color-slate-100: #ececf0;
   --color-slate-200: #dfdfe4;
@@ -38,7 +27,6 @@
   --color-slate-800: #2c2c2e;
   --color-slate-900: #1d1d1f;
 
-  /* Estados, en tonos sobrios */
   --color-emerald-50: #ebf7ef;
   --color-emerald-500: #34c759;
   --color-emerald-600: #248a3d;
@@ -63,7 +51,6 @@
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-  /* Movimiento: la curva "ease-out" larga y suave característica de Apple */
   --ease-apple: cubic-bezier(0.22, 1, 0.36, 1);
   --animate-fade-up: fade-up 0.7s var(--ease-apple) both;
   --animate-fade-in: fade-in 0.5s ease both;
@@ -149,7 +136,6 @@ h2 {
   background: var(--color-brand-100);
 }
 
-/* Respeta la zona segura de iPhone en modo standalone. */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -157,11 +143,6 @@ h2 {
   padding-top: env(safe-area-inset-top);
 }
 
-/*
- * Modo oscuro al estilo Apple: fondo negro, superficies gris carbón (#1C1C1E),
- * texto casi blanco y el azul de marca un poco más luminoso para que se lea sobre negro.
- * Se invierten las mismas variables que usa toda la app, así cada pantalla cambia sola.
- */
 .dark {
   color-scheme: dark;
   --color-white: #1c1c1e; /* superficies (tarjetas, menús, campos) */
@@ -211,7 +192,6 @@ h2 {
   --color-sky-800: #8cbfff;
 }
 
-/* Superficies translúcidas tipo "vidrio" (barras de navegación). */
 .dark .glass {
   background: rgb(28 28 30 / 0.72);
 }
@@ -221,7 +201,6 @@ h2 {
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
-/* Entrada escalonada de listas y grillas: cada hijo aparece un poco después del anterior. */
 .stagger > * {
   animation: var(--animate-fade-up);
 }
@@ -247,7 +226,6 @@ h2 {
   animation-delay: 350ms;
 }
 
-/* Diálogos: aparecen con una leve escala y el fondo se desenfoca. */
 dialog[open] {
   animation: var(--animate-scale-in);
 }
@@ -260,7 +238,6 @@ dialog[open]::backdrop {
   animation: var(--animate-fade-in);
 }
 
-/* Números que cambian (contadores, horas) sin saltos de ancho. */
 .tabular {
   font-variant-numeric: tabular-nums;
 }
