@@ -34,7 +34,12 @@ export interface EmployeeDayStatus {
   status: PresenceStatus;
   nextType: MarkType;
   lastMark: { id: string; type: MarkType; timestamp: string } | null;
+  /** Ingreso que cuenta hoy (la hora de entrada del turno si llegó antes). */
   firstInToday: string | null;
+  /** Minutos que llegó antes de su hora de entrada (no suman horas). */
+  preEntryMinutesToday: number;
+  /** Desde cuándo corre el contador de la jornada en curso. */
+  countingFrom: string | null;
   workedMinutesToday: number;
   openSession: boolean;
   isLate: boolean;
@@ -95,6 +100,7 @@ export interface Attendance {
   source: 'WEB';
   isLate: boolean;
   lateMinutes: number;
+  preEntryMinutes: number;
 }
 
 export interface MarkResponse {
@@ -109,10 +115,13 @@ export interface MarkRecord {
   timestamp: string;
   isLate: boolean;
   lateMinutes: number;
+  preEntryMinutes: number;
 }
 
 export interface WorkSession {
   in: string;
+  countedFrom: string;
+  preEntryMinutes: number;
   out: string | null;
   minutes: number;
   open: boolean;
@@ -122,6 +131,7 @@ export interface WorkSession {
 export interface DaySummary {
   date: string;
   firstIn: string | null;
+  preEntryMinutes: number;
   lastOut: string | null;
   workedMinutes: number;
   sessions: WorkSession[];
@@ -176,6 +186,7 @@ export interface AttendanceMarkedEvent {
   timestamp: string;
   isLate: boolean;
   lateMinutes: number;
+  preEntryMinutes: number;
   status: EmployeeDayStatus;
 }
 
@@ -255,9 +266,13 @@ export interface AssignResult {
 
 export interface ReportTotals {
   workedMinutes: number;
+  /** Después de la hora de salida del turno, o todo lo trabajado en un día de descanso. */
+  overtimeMinutes: number;
   daysWorked: number;
   lateDays: number;
   lateMinutes: number;
+  preEntryDays: number;
+  preEntryMinutes: number;
   openSessions: number;
   marks: number;
   scheduledDays: number;
@@ -267,21 +282,25 @@ export interface ReportTotals {
 export interface ReportDay {
   date: string;
   firstIn: string | null;
+  preEntryMinutes: number;
   lastOut: string | null;
   workedMinutes: number;
+  overtimeMinutes: number;
   isLate: boolean;
   lateMinutes: number;
   openSession: boolean;
   plan: DayPlan;
   absent: boolean;
   site: SiteRef;
-  marks: { id: string; type: MarkType; timestamp: string; isLate: boolean; lateMinutes: number }[];
+  marks: { id: string; type: MarkType; timestamp: string; isLate: boolean; lateMinutes: number; preEntryMinutes: number }[];
 }
 
 export interface EmployeeReport {
   employee: { id: string; fullName: string; documentId: string; position: string; active: boolean; schedules: string[]; homeSite: SiteRef };
   totals: ReportTotals;
   days: ReportDay[];
+  /** Todos los días del rango hasta hoy con lo que le tocaba. */
+  calendar: DayPlan[];
 }
 
 export interface AttendanceReport {

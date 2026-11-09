@@ -38,14 +38,18 @@ export default function Reports() {
   const report = useAttendanceReport({ from, to, employeeId: employeeId || undefined, siteId: siteId || undefined }, validRange);
   const data = report.data;
 
+  // El Excel es mensual: una hoja de resumen y una hoja por colaborador con todos los días del mes.
+  const [month, setMonth] = useState(() => todayKey().slice(0, 7));
   const exportXlsx = async () => {
+    if (!month) return;
     setDownloading(true);
     try {
-      const search = new URLSearchParams({ from, to });
+      const range = monthRange(month);
+      const search = new URLSearchParams(range);
       if (employeeId) search.set('employeeId', employeeId);
       if (siteId) search.set('siteId', siteId);
-      await api.download(`/reports/attendance/export?${search}`, `asistencia_${from}_a_${to}.xlsx`);
-      toast.success('Reporte exportado', 'El archivo de Excel se descargó.');
+      await api.download(`/reports/attendance/export?${search}`, `asistencia_${month}.xlsx`);
+      toast.success('Reporte exportado', `Se descargó el Excel de ${monthLabel(month)}.`);
     } catch (err) {
       toast.error('No se pudo exportar', errorMessage(err));
     } finally {
@@ -66,9 +70,22 @@ export default function Reports() {
         title="Reportes"
         description="Marcaciones, horas trabajadas y atrasos por rango de fechas (hora de Ecuador)."
         actions={
-          <Button onClick={exportXlsx} loading={downloading} disabled={!validRange || !data}>
-            Exportar a Excel
-          </Button>
+          <div className="flex items-center gap-2">
+            <label htmlFor="r-month" className="sr-only">
+              Mes a exportar
+            </label>
+            <input
+              id="r-month"
+              type="month"
+              className={cn(inputClass, 'w-auto py-2')}
+              value={month}
+              max={todayKey().slice(0, 7)}
+              onChange={(e) => setMonth(e.target.value)}
+            />
+            <Button onClick={exportXlsx} loading={downloading} disabled={!month}>
+              Exportar mes a Excel
+            </Button>
+          </div>
         }
       />
 
@@ -141,8 +158,9 @@ export default function Reports() {
         <ErrorState message={errorMessage(report.error)} onRetry={() => report.refetch()} />
       ) : data ? (
         <div className={cn('transition-opacity', report.isFetching && 'opacity-60')} aria-busy={report.isFetching}>
-          <dl className="stagger mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <dl className="stagger mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
             <Stat label="Horas trabajadas" value={formatMinutesShort(data.totals.workedMinutes)} />
+            <Stat label="Horas suplementarias" value={formatMinutesShort(data.totals.overtimeMinutes)} />
             <Stat label="Días trabajados" value={`${data.totals.daysWorked} / ${data.totals.scheduledDays}`} />
             <Stat label="Ausencias" value={data.totals.absences} tone={data.totals.absences ? 'text-red-700' : undefined} />
             <Stat label="Días con atraso" value={data.totals.lateDays} tone={data.totals.lateDays ? 'text-red-700' : undefined} />
@@ -294,6 +312,10 @@ export default function Reports() {
                                       <td className="py-1.5">
                                         <div className="flex flex-wrap gap-1">
                                           {d.isLate && <Badge tone="red">Atraso {formatLate(d.lateMinutes)}</Badge>}
+                                          {d.preEntryMinutes > 0 && <Badge tone="sky">Preingreso {formatLate(d.preEntryMinutes)}</Badge>}
+                                          {d.overtimeMinutes > 0 && (
+                                            <Badge tone="brand">Suplementarias {formatLate(d.overtimeMinutes)}</Badge>
+                                          )}
                                           {d.openSession && <Badge tone="amber">Jornada abierta</Badge>}
                                           {d.absent && <Badge tone="red">Ausente</Badge>}
                                           {!d.absent && d.plan.kind === 'REST' && <Badge tone="sky">Trabajó en descanso</Badge>}
@@ -335,6 +357,19 @@ function daysAgo(n: number) {
   const [y, m, d] = todayKey().split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d - n));
   return dt.toISOString().slice(0, 10);
+}
+
+/** "2026-11" → { from: "2026-11-01", to: "2026-11-30" }. */
+function monthRange(month: string) {
+  const [y, m] = month.split('-').map(Number);
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return { from: `${month}-01`, to: `${month}-${String(last).padStart(2, '0')}` };
+}
+
+/** "2026-11" → "noviembre de 2026". */
+function monthLabel(month: string) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('es-EC', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
 function previousMonth() {

@@ -107,6 +107,7 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 **Son los bloques de horario**, como las piezas de un rompecabezas: "Mañana 08:00–18:00", "Tarde 11:00–21:00".
 
 - Cada turno tiene una **tolerancia**: los minutos de gracia antes de contar atraso. Con tolerancia de 10 minutos, llegar 08:10 no es atraso; llegar 08:11 sí, y se cuentan 11 minutos.
+- Si alguien llega **antes** de su hora de entrada, esos minutos quedan como **preingreso**: se ven en el dashboard, el historial y los reportes, pero **no suman horas**. Las horas se cuentan desde la hora de entrada del turno.
 - La columna "Usado en" dice qué horarios usan cada turno.
 
 ### 3. Horarios
@@ -142,7 +143,10 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 - Se elige un rango de fechas (hay atajos: Hoy, Últimos 7 días, Este mes, Mes anterior), una sede y un empleado.
 - Totales: horas trabajadas, días trabajados sobre los programados, **ausencias**, días con atraso y minutos de atraso.
 - Por persona: "Ver días" muestra cada día con su sede, el turno que le tocaba, la entrada, la salida y las horas.
-- **"Exportar a Excel"** descarga un archivo con 3 hojas: Resumen, Detalle por día y todas las marcaciones.
+- **"Exportar mes a Excel"**: se elige el mes y se descarga un archivo con:
+  - **Resumen**: una fila por colaborador con sus totales del mes. El nombre lleva a su hoja.
+  - **Una hoja por colaborador**, con todos los días del mes hasta hoy: turno, ingreso, salida, horas trabajadas, atraso y horas suplementarias (en horas:minutos), más una observación ("No marcó", "Descanso", "Preingreso 5 min"…). Los días que no marcó aparecen con 0.
+- **Horas suplementarias**: el tiempo trabajado después de la hora de salida del turno. En un día de descanso, todo lo trabajado cuenta como suplementario.
 
 ### Usuarios (solo el administrador)
 
@@ -161,6 +165,18 @@ Nadie puede quitarse su propio permiso ni desactivarse a sí mismo, y siempre qu
 
 **¿Qué pasa si un trabajador olvida marcar la salida?**
 Ese día queda como "Jornada abierta" y no suma horas. Al día siguiente su botón vuelve a decir "Marcar ingreso". Puede enviar una justificación para que el jefe lo revise.
+
+**¿Qué pasa si llega antes de su hora de entrada?**
+Se registra la hora real en que marcó, pero sus horas se cuentan **desde la hora de entrada del turno**. Los minutos de antes quedan como **preingreso** y no suman horas. Por ejemplo, con turno de 08:00 a 18:00:
+
+| Marca a las | En el reporte                           | Horas que suma (si sale 18:00) |
+| ----------- | --------------------------------------- | ------------------------------ |
+| 07:50       | Ingreso 08:00 · Preingreso 10 min       | 10 h                           |
+| 08:00       | Ingreso 08:00                           | 10 h                           |
+| 08:10       | Ingreso 08:10 (dentro de la tolerancia) | 9 h 50 min                     |
+| 08:11       | Ingreso 08:11 · Atraso 11 min           | 9 h 49 min                     |
+
+La hora real de la marcación se sigue viendo en el detalle de marcaciones y en la hoja "Marcaciones" del Excel.
 
 **¿Qué pasa si marca en su día de descanso?**
 Se registra normalmente y no cuenta como atraso.

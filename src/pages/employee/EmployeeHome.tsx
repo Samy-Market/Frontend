@@ -27,10 +27,10 @@ export default function EmployeeHome() {
   const inside = s?.status === 'INSIDE';
 
   // Horas de hoy "en vivo": lo que calculó el servidor + lo transcurrido desde esa consulta.
+  // Con preingreso el contador no corre hasta la hora de entrada del turno.
+  const countFrom = Math.max(statusQ.dataUpdatedAt, s?.countingFrom ? new Date(s.countingFrom).getTime() : 0);
   const liveMinutes =
-    s && inside
-      ? s.workedMinutesToday + Math.max(0, Math.floor((now.getTime() - statusQ.dataUpdatedAt) / 60_000))
-      : (s?.workedMinutesToday ?? 0);
+    s && inside ? s.workedMinutesToday + Math.max(0, Math.floor((now.getTime() - countFrom) / 60_000)) : (s?.workedMinutesToday ?? 0);
 
   const onMark = () => {
     if (!s || mark.isPending) return;
@@ -179,6 +179,12 @@ export default function EmployeeHome() {
           </div>
         </dl>
 
+        {s.preEntryMinutesToday > 0 && s.firstInToday && (
+          <p className="mt-3 rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-900">
+            Llegaste <strong>{formatLate(s.preEntryMinutesToday)}</strong> antes (preingreso). Tus horas se cuentan desde las{' '}
+            <strong>{formatTime(s.firstInToday)}</strong>.
+          </p>
+        )}
         {s.isLate && (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
             Hoy ingresaste con <strong>{formatLate(s.lateMinutes)}</strong> de atraso. Puedes justificarlo desde el Historial.

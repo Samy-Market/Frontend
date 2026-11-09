@@ -111,6 +111,7 @@ export default function EmployeeHistory() {
                           </p>
                           <div className="mt-1 flex flex-wrap gap-1">
                             {d.isLate && <Badge tone="amber">Atraso {formatLate(d.lateMinutes)}</Badge>}
+                            {d.preEntryMinutes > 0 && <Badge tone="sky">Preingreso {formatLate(d.preEntryMinutes)}</Badge>}
                             {inProgress && <Badge tone="sky">Jornada en curso</Badge>}
                             {abandoned && <Badge tone="red">Jornada abierta (sin salida)</Badge>}
                             {d.absent && <Badge tone="red">Ausente</Badge>}

@@ -280,6 +280,7 @@ function Row({ item: i, highlighted }: { item: TodayItem; highlighted: boolean }
           )}
           {i.status !== 'NOT_MARKED' && i.todayPlan.kind === 'REST' && <Badge tone="sky">En día de descanso</Badge>}
           {i.isLate && <Badge tone="red">Atraso {formatLate(i.lateMinutes)}</Badge>}
+          {i.preEntryMinutesToday > 0 && <Badge tone="sky">Preingreso {formatLate(i.preEntryMinutesToday)}</Badge>}
         </div>
       </td>
       <td className={cn(tdClass, 'tabular-nums')}>{formatTime(i.firstInToday)}</td>
