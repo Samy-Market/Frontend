@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { DeviceLocation } from '@/lib/geolocation';
 import { api } from '@/lib/api';
 import { qk } from '@/lib/queryClient';
 import type { EmployeeDayStatus, Justification, MarkResponse, MarkType, MonthHistory, MySchedule } from '@/lib/types';
@@ -29,7 +30,7 @@ export const useMyJustifications = () =>
 export function useMark() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (expectedType: MarkType) => api.post<MarkResponse>('/attendance/mark', { expectedType }),
+    mutationFn: (body: { expectedType: MarkType; location?: DeviceLocation }) => api.post<MarkResponse>('/attendance/mark', body),
     onSuccess: (res) => {
       qc.setQueryData(qk.myStatus, res.status);
       void qc.invalidateQueries({ queryKey: qk.myMonthAll });
@@ -43,7 +44,8 @@ export function useMark() {
 export function useCreateJustification() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { attendanceId: string; reason: string }) => api.post<Justification>('/justifications', body),
+    mutationFn: (body: { attendanceId: string; reason: string } | { date: string; reason: string }) =>
+      api.post<Justification>('/justifications', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.justificationsAll }),
   });
 }

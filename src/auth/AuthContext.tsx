@@ -73,6 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [adoptSession],
   );
 
+  const replaceToken = useCallback((next: string) => {
+    tokenStore.set(next);
+    setToken(next);
+  }, []);
+
   const { data: me, isPending, fetchStatus, error: meError, refetch } = meQuery;
   const value = useMemo<AuthState>(
     () => ({
@@ -84,8 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       setupAdmin,
       logout,
+      replaceToken,
     }),
-    [token, me, isPending, fetchStatus, meError, refetch, login, setupAdmin, logout],
+    [token, me, isPending, fetchStatus, meError, refetch, login, setupAdmin, logout, replaceToken],
   );
 
   return (

@@ -38,15 +38,22 @@ npm run dev              # http://localhost:5173
 | `npm run build`                   | Build de producción en `dist/`, con service worker                                 |
 | `npm run preview`                 | Sirve el build localmente (permite instalar la PWA en `localhost`)                 |
 | `npm run typecheck`               | Revisión de tipos                                                                  |
+| `npm test` / `test:watch`         | Pruebas con Vitest y Testing Library (una vez / al guardar)                        |
 | `npm run lint` / `lint:fix`       | Revisa el código con ESLint (TypeScript y reglas de React) / corrige lo automático |
 | `npm run format` / `format:check` | Da formato con Prettier / solo verifica                                            |
 | `npm run generate-pwa-assets`     | Regenera los íconos a partir de `public/icon.svg`                                  |
 
+## Pruebas e integración continua
+
+`npm test` corre las pruebas de `src/**/*.test.ts(x)` en jsdom: reglas de cédula, correo y contraseña (las mismas del backend), formatos de fecha, ubicación pegada desde Google Maps, errores de GPS, y componentes como el campo de contraseña, la confirmación de eliminar y el resumen al quitar un horario.
+
+Cada push a `main` y cada pull request ejecuta [`.github/workflows/ci.yml`](.github/workflows/ci.yml): formato, lint, tipos, pruebas, build y la generación de la CSP.
+
 ## Variables de entorno
 
-| Variable       | Uso                                                                                                                  |
-| -------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `VITE_API_URL` | URL pública del backend (REST y WebSocket). **Se incrusta al hacer el build**: si cambia, hay que volver a construir |
+| Variable       | Uso                                                                                                                                                                                    |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_URL` | URL pública del backend (REST y WebSocket). **Se incrusta al hacer el build**: si cambia, hay que volver a construir. También define a qué servidor permite conectarse la CSP de nginx |
 
 ## Funcionalidades
 
@@ -94,6 +101,8 @@ src/
 public/            íconos de la PWA
 Dockerfile         build de Vite + nginx para producción
 nginx.conf.template  sirve la SPA en el PORT que asigne la plataforma
+scripts/security-headers.mjs  genera las cabeceras de seguridad (CSP) a partir de VITE_API_URL
+public/theme-init.js   aplica el tema antes de pintar (archivo aparte: la CSP no permite scripts en línea)
 railway.json       configuración de despliegue en Railway
 ```
 

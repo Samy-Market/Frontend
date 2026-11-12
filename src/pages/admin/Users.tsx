@@ -3,6 +3,7 @@ import { PasswordInput } from '@/components/PasswordInput';
 import { generatePassword, passwordProblems } from '@/lib/password';
 import { FormEvent, useState } from 'react';
 import { formKey } from '@/lib/form';
+import { ConfirmDelete } from '@/components/ConfirmDelete';
 import { PageHeader } from './AdminLayout';
 import { useAuth } from '@/auth/auth';
 import { useToast } from '@/components/toast';
@@ -21,7 +22,7 @@ import {
   thClass,
 } from '@/components/ui';
 import { cn } from '@/lib/styles';
-import { StaffUserInput, useSaveStaffUser, useStaffUsers } from '@/hooks/admin';
+import { StaffUserInput, useDeleteStaffUser, useSaveStaffUser, useStaffUsers } from '@/hooks/admin';
 import { ApiError, errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/time';
 import type { StaffUser } from '@/lib/types';
@@ -31,6 +32,7 @@ const roleLabel = { ADMIN: 'Administrador', SUPERVISOR: 'Supervisor' } as const;
 export default function Users() {
   const { user: me } = useAuth();
   const list = useStaffUsers();
+  const deleteUser = useDeleteStaffUser();
   const [editing, setEditing] = useState<StaffUser | 'new' | null>(null);
 
   return (
@@ -97,9 +99,22 @@ export default function Users() {
                   </td>
                   <td className={cn(tdClass, 'text-slate-600')}>{formatDateTime(u.createdAt)}</td>
                   <td className={cn(tdClass, 'text-right')}>
-                    <Button variant="ghost" size="sm" onClick={() => setEditing(u)} aria-label={`Editar a ${u.email}`}>
-                      Editar
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => setEditing(u)} aria-label={`Editar a ${u.email}`}>
+                        Editar
+                      </Button>
+                      <ConfirmDelete
+                        what="usuario"
+                        name={u.email}
+                        blockedReason={u.id === me?.id ? 'No puedes eliminar tu propio usuario.' : null}
+                        onDelete={() => deleteUser.mutateAsync(u.id)}
+                      >
+                        <p className="text-slate-500">
+                          Pierde el acceso al instante. Solo se puede eliminar un usuario que aún no ha hecho cambios en el sistema; si ya
+                          trabajó con la app, desactívalo para conservar su historial.
+                        </p>
+                      </ConfirmDelete>
+                    </div>
                   </td>
                 </tr>
               ))}

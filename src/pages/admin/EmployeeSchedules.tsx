@@ -3,7 +3,8 @@ import { formKey } from '@/lib/form';
 import { AssignModal, AssignPreset } from './Schedules';
 import { useToast } from '@/components/toast';
 import { Badge, Button, ErrorState, inputClass, Modal, Spinner } from '@/components/ui';
-import { useUnassign, useEmployeeAssignments, useUpdateAssignment } from '@/hooks/admin';
+import { useUnassign, useUnassignPreview, useEmployeeAssignments, useUpdateAssignment } from '@/hooks/admin';
+import { UnassignSummary } from '@/components/UnassignSummary';
 import { errorMessage } from '@/lib/api';
 import { daysUntil, formatDayKeyNumeric, todayKey } from '@/lib/time';
 import type { Assignment, Employee } from '@/lib/types';
@@ -98,6 +99,27 @@ function AssignmentRow({ a, canEdit, onEditEnd }: { a: Assignment; canEdit: bool
   const unassign = useUnassign();
   const toast = useToast();
   const view = statusView[a.status];
+  const [confirming, setConfirming] = useState(false);
+  const [restore, setRestore] = useState(true);
+  const preview = useUnassignPreview(confirming ? [a.id] : []);
+  const remove = () =>
+    unassign.mutate(
+      { ids: [a.id], restorePrevious: restore },
+      {
+        onSuccess: (r) => {
+          toast.success(
+            'Horario quitado',
+            r.restored
+              ? 'Vuelve a su horario anterior en esas fechas.'
+              : a.startDate >= todayKey()
+                ? `${a.schedule.name} ya no se aplicará.`
+                : `${a.schedule.name} termina hoy.`,
+          );
+          setConfirming(false);
+        },
+        onError: (err) => toast.error('No se pudo quitar', errorMessage(err)),
+      },
+    );
   return (
     <li className="flex flex-col gap-2 rounded-xl bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -114,32 +136,29 @@ function AssignmentRow({ a, canEdit, onEditEnd }: { a: Assignment; canEdit: bool
             Cambiar fin
           </Button>
           {(a.status === 'UPCOMING' || a.endDate !== todayKey()) && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-red-700"
-              loading={unassign.isPending}
-              title={
-                a.startDate >= todayKey()
-                  ? 'Se elimina porque empieza hoy o más adelante.'
-                  : 'Lo conserva hasta hoy; desde mañana queda sin este horario.'
-              }
-              onClick={() =>
-                unassign.mutate([a.id], {
-                  onSuccess: () =>
-                    toast.success(
-                      'Horario quitado',
-                      a.startDate >= todayKey() ? `${a.schedule.name} ya no se aplicará.` : `${a.schedule.name} termina hoy.`,
-                    ),
-                  onError: (err) => toast.error('No se pudo quitar', errorMessage(err)),
-                })
-              }
-            >
+            <Button size="sm" variant="ghost" className="text-red-700" onClick={() => setConfirming(true)}>
               Quitar
             </Button>
           )}
         </div>
       )}
+      <Modal
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        title={`Quitar ${a.schedule.name}`}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirming(false)}>
+              Cancelar
+            </Button>
+            <Button variant="danger" loading={unassign.isPending} disabled={preview.isPending || preview.isError} onClick={remove}>
+              Quitar
+            </Button>
+          </>
+        }
+      >
+        <UnassignSummary query={preview} restore={restore} onRestoreChange={setRestore} />
+      </Modal>
     </li>
   );
 }

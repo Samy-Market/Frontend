@@ -151,8 +151,12 @@ export function Modal({
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      onClose={(e) => {
+        // React propaga "close" de un <dialog> anidado a su padre: sin esto, cerrar el de adentro cierra los dos.
+        if (e.target === ref.current) onClose();
+      }}
       onCancel={(e) => {
+        if (e.target !== ref.current) return;
         e.preventDefault();
         onClose();
       }}

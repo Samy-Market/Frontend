@@ -10,6 +10,7 @@ export interface AuthState {
   login: (email: string, password: string) => Promise<Me>;
   setupAdmin: (data: { email: string; password: string; siteName?: string; code?: string }) => Promise<Me>;
   logout: () => void;
+  replaceToken: (token: string) => void;
 }
 
 export const AuthContext = createContext<AuthState | null>(null);

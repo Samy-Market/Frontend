@@ -51,6 +51,7 @@ El puntito verde arriba a la derecha dice **"En vivo"**: la app está conectada 
 - Un **botón redondo grande**: azul dice **"Marcar ingreso"**; cuando ya entraste, se vuelve negro y dice **"Marcar salida"**.
   - La app sabe sola si toca entrada o salida. No te puedes equivocar marcando dos entradas seguidas.
   - Al tocarlo aparece un ✓ con "Ingreso registrado".
+  - Si tu sede tiene **control de ubicación**, debajo del botón dice "Al marcar se verifica que estés en …". Al tocarlo, la app pide tu ubicación (la primera vez el celular pregunta si la permites: elige **Permitir**). Si estás lejos, avisa a qué distancia estás y no registra nada.
 - **"Tu turno de hoy"**: a qué hora te toca entrar hoy, por ejemplo "Tarde · 11:00–21:00", o si hoy es tu **día de descanso**.
 - **Dónde trabajas hoy**: tu sede. Si el jefe te mandó a otra por un día, dice "Hoy trabajas en Sede Norte (traslado temporal)".
 - **Estado actual**: si estás Dentro o Fuera, tu última marcación y cuántas horas llevas hoy (el contador avanza solo).
@@ -65,6 +66,7 @@ El puntito verde arriba a la derecha dice **"En vivo"**: la app está conectada 
 - Arriba: horas trabajadas, días trabajados, atrasos y **ausencias**.
 - Cada día muestra qué turno tenías, a qué hora entraste y saliste, y etiquetas como "Atraso 14 min", "Ausente" o "Jornada abierta" (cuando olvidaste marcar la salida).
 - Cada marcación tiene el botón **"Justificar"** para explicar qué pasó.
+- Los días de trabajo en los que **no marcaste nada** ("Ausente") también tienen **"Justificar"**, para explicar la falta (por ejemplo, una cita médica). Solo se puede en días que ya pasaron. Si el jefe la aprueba, el día pasa a **"Ausencia justificada"** y deja de contar como ausencia.
 
 ### 3. Solicitudes
 
@@ -77,7 +79,7 @@ El puntito verde arriba a la derecha dice **"En vivo"**: la app está conectada 
 El menú de la izquierda está **en el orden en que se prepara el sistema**:
 
 **Configuración → 1 Sedes, 2 Turnos, 3 Horarios, 4 Empleados.**
-Después, el día a día: **Justificaciones** y **Reportes**.
+Después, el día a día: **Justificaciones**, **Feriados y permisos** y **Reportes**.
 
 Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los horarios de entrenamiento (turnos), luego el calendario de la semana (horarios), después los jugadores (empleados), y al final le dices a cada jugador qué calendario sigue.
 
@@ -100,6 +102,7 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 - **Traslados**: cuando por una emergencia o una orden alguien debe trabajar en otra sede, el jefe pulsa **"Registrar traslado"** y elige la sede de destino, las fechas (hay botones rápidos: "Solo hoy", "3 días", "1 semana"), el motivo y las personas.
   - **El empleado no tiene que hacer nada**: marca normal y su marcación queda en la otra sede.
   - Al terminar las fechas vuelve solo a su sede. Si la emergencia acaba antes, se pulsa **"Terminar ahora"**.
+- **Control de ubicación (opcional)**: al editar una sede se puede indicar su ubicación (latitud, longitud) y un radio, por ejemplo 150 m. Desde ahí, los empleados que trabajan ese día en esa sede solo pueden marcar si su celular está dentro de ese radio. La ubicación se obtiene con **"Usar mi ubicación actual"** (estando en la sede) o copiándola de Google Maps (mantener presionado sobre el lugar). **"Ver en el mapa"** permite revisarla. Si se deja vacía, se marca desde cualquier lugar, como antes.
 - Solo el administrador crea, edita y **elimina** sedes. Una sede no se puede eliminar si es la sede base de algún empleado (primero se cambian de sede) ni si ya tiene marcaciones o traslados: en ese caso se desactiva.
 
 ### 2. Turnos
@@ -118,6 +121,7 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 - Se ve como una tira de 7 días con colores.
 - **"Asignar a empleados"**: eliges el horario, desde qué fecha y por cuánto tiempo (1, 3 o 6 meses), y marcas a las personas. Si alguien ya tenía otro horario, el anterior **termina solo** el día anterior. Así funcionan las **rotaciones cada 3 meses**.
 - **"Ver asignados"**: muestra quién tiene ese horario hoy o más adelante. Se pueden marcar varias personas y pulsar **"Quitar del horario"**: si la asignación empieza hoy o más adelante, se borra; si ya venía de antes, la conserva hasta hoy y desde mañana queda sin ese horario. Las marcaciones no se tocan.
+  - Antes de confirmar, la app muestra cómo queda cada persona, por ejemplo "Quedará sin horario desde el 16/11". Si tenía **otro horario justo antes** (el que se recortó al asignarle este), aparece la opción **"Volver a su horario anterior"**, marcada por defecto: vuelve a ese horario en las mismas fechas que tenía, sin dejar días vacíos. Lo mismo ocurre con **"Quitar"** en el historial de horarios de un empleado.
 - Un horario solo se puede **eliminar** si nunca se asignó. Si tiene personas asignadas, primero se quitan; si ya se usó en el pasado, se desactiva.
 - **Rotaciones por terminar**: un aviso amarillo con quiénes terminan su horario pronto y aún no tienen el siguiente, con un botón para asignarlo de una vez.
 
@@ -141,13 +145,25 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 - Pestañas: Pendientes, Aprobadas, Rechazadas y Todas.
 - Cada nota muestra quién la envió, qué marcación quiere justificar y el motivo.
 - **Aprobar** o **Rechazar**, con una nota opcional. El empleado recibe la respuesta al instante en su celular.
+- Una nota puede ser de una marcación (por ejemplo, un ingreso con atraso) o de una **ausencia** (un día de trabajo sin marcas).
+- **Si apruebas la justificación de una ausencia, ese día deja de contar como ausencia**: aparece como "Ausencia justificada" (en verde), no suma horas trabajadas y en el Excel tiene su propia columna, "Ausencias justificadas".
+- **Si apruebas la justificación de un ingreso con atraso, ese atraso deja de contar**: no suma a los días ni a los minutos de atraso del reporte ni del Excel. Igual queda a la vista como "Atraso … justificado" (en verde), para que se sepa qué pasó. Rechazar o dejarla pendiente no cambia nada.
+
+### Feriados y permisos
+
+**Es el calendario de los días que no se trabaja.** Esos días no cuentan como ausencia ni como días programados, y si alguien igual marca, no se le cuenta atraso.
+
+- **Feriados** (solo el administrador los agrega o quita): valen para todos. Se elige la fecha y el nombre, por ejemplo "Día del Trabajo". Si alguien trabaja un feriado, esas horas cuentan como **suplementarias**, igual que en su día de descanso.
+- **Vacaciones y permisos** (administrador o supervisor): para uno o varios empleados, con tipo (**Vacaciones**, **Permiso médico** o **Permiso personal**), fechas y una nota opcional. Se pueden registrar fechas pasadas, por ejemplo un permiso médico de la semana anterior.
+  - **"Cancelar"** borra uno que aún no empieza. **"Terminar ahora"** acorta uno en curso: desde hoy la persona vuelve a trabajar normal. Los que ya terminaron no se tocan.
+- En el **Dashboard** esas personas aparecen con la etiqueta del feriado o permiso y no cuentan como "Sin marcar". En el celular del empleado aparece "Hoy es feriado" o "Hoy estás de vacaciones".
 
 ### Reportes
 
 **Es la libreta de calificaciones de la asistencia.**
 
 - Se elige un rango de fechas (hay atajos: Hoy, Últimos 7 días, Este mes, Mes anterior), una sede y un empleado.
-- Totales: horas trabajadas, días trabajados sobre los programados, **ausencias**, días con atraso y minutos de atraso.
+- Totales: horas trabajadas, días trabajados sobre los programados, **ausencias**, días con atraso y minutos de atraso. Los atrasos justificados no suman, y debajo de "Días con atraso" se indica cuántos hubo (por ejemplo "+1 justificado").
 - Por persona: "Ver días" muestra cada día con su sede, el turno que le tocaba, la entrada, la salida y las horas.
 - **"Exportar mes a Excel"**: se elige el mes y se descarga un archivo con:
   - **Resumen**: una fila por colaborador con sus totales del mes. El nombre lleva a su hoja.
@@ -164,6 +180,16 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 | **Supervisor**    | Ver el dashboard, aprobar justificaciones, sacar reportes y registrar traslados. Ve sedes, turnos, horarios y empleados, pero no los modifica |
 
 Nadie puede quitarse su propio permiso ni desactivarse a sí mismo, y siempre queda al menos un administrador.
+
+**Eliminar** un usuario es solo para quien se creó por error: pierde el acceso al instante. No se puede eliminar a uno mismo, ni a quien ya hizo cambios en el sistema (revisó justificaciones, registró traslados o editó datos): en ese caso se **desactiva**, para conservar el registro de quién hizo qué.
+
+### Auditoría (solo el administrador)
+
+**Es el libro de registro.** Cada cambio que alguien hace en el panel queda anotado: quién lo hizo, cuándo, qué hizo (creó, editó, eliminó, aprobó, asignó…) y sobre qué registro.
+
+- Se puede filtrar por **sección** (sedes, empleados, horarios, justificaciones, feriados…), por **usuario** y por **fechas**. Muestra los 50 más recientes; **"Cargar más"** trae los anteriores.
+- **"Ver"** abre el detalle con los valores de **antes y después**; las filas resaltadas son las que cambiaron.
+- Es solo lectura: nadie puede editar ni borrar estos registros. Las contraseñas nunca se muestran.
 
 ---
 
@@ -187,11 +213,38 @@ La hora real de la marcación se sigue viendo en el detalle de marcaciones y en 
 **¿Qué pasa si marca en su día de descanso?**
 Se registra normalmente y no cuenta como atraso.
 
+**Un empleado dice que está en la sede pero la app no lo deja marcar. ¿Qué reviso?**
+El mensaje dice qué pasó:
+
+- **"Necesitamos tu ubicación"** o **"Bloqueaste el permiso de ubicación"**: hay que permitir la ubicación al navegador para el sitio de SAMY (ícono del candado junto a la dirección) y tener el GPS del celular encendido.
+- **"Tu ubicación es muy imprecisa"**: el celular no logra ubicarse bien (pasa en sótanos o lejos de ventanas). Activar el GPS o acercarse a una ventana.
+- **"Estás a … de la sede"**: revisa en **Sedes › Editar** que la ubicación de la sede sea la correcta (**"Ver en el mapa"**) o amplía el radio.
+
+Para cada marcación se guarda la ubicación enviada y su distancia a la sede.
+
 **¿Cuándo se cuenta una ausencia?**
-Cuando un día de trabajo **ya pasó** y la persona no marcó nada. El día de hoy nunca cuenta como ausencia mientras no termine.
+Cuando un día de trabajo **ya pasó** y la persona no marcó nada. El día de hoy nunca cuenta como ausencia mientras no termine. Si el empleado justifica la falta y el jefe la aprueba, deja de contar como ausencia: queda como "Ausencia justificada", sin horas trabajadas.
+
+**¿Cómo cambio mi contraseña?**
+Cualquier usuario (empleado, supervisor o administrador) puede cambiarla por su cuenta:
+
+- **Empleado**: toca el ícono de la llave 🔑 arriba, junto a "Salir".
+- **Administrador o supervisor**: en el panel izquierdo, debajo de tu correo, elige **"Cambiar contraseña"** (en el celular, el ícono de la llave arriba).
+
+Pide la contraseña actual y la nueva dos veces (de 8 a 15 caracteres, distinta de la actual). La sesión en ese dispositivo sigue abierta, y **se cierran las sesiones abiertas en otros dispositivos** (por si alguien más la conocía). Si se equivoca 5 veces con la contraseña actual, se bloquea 15 minutos, igual que en el ingreso.
+
+**Olvidé mi contraseña. ¿Cómo la recupero?**
+En la pantalla de ingreso, toca **"¿Olvidaste tu contraseña?"** y escribe tu correo. Te llega un correo con el botón **"Crear nueva contraseña"**: el enlace vale **30 minutos** y sirve **una sola vez**. Al guardarla se cierran las sesiones que tenías abiertas en otros dispositivos.
+
+- Si no llega, revisa la carpeta de spam. Se pueden pedir hasta 3 correos por hora.
+- Por seguridad, la app responde lo mismo aunque el correo no esté registrado.
+- Si la persona ya no tiene acceso a su correo, un administrador puede ponerle una contraseña nueva desde **Empleados** o **Usuarios** (eso también cierra sus sesiones abiertas).
 
 **Creé un empleado y no puede entrar con su contraseña. ¿Qué reviso?**
 La contraseña se guarda tal cual se escribe (de 8 a 15 caracteres), y respeta mayúsculas y minúsculas. Al crearla hay que escribirla dos veces; con el ícono del ojo 👁 se puede ver lo escrito, y "Generar una contraseña" crea una fácil de dictar (por ejemplo "Kmrt-4827"). En el ingreso, la app avisa si Bloq Mayús está activado.
+
+**Me sale "Demasiados intentos fallidos". ¿Qué hago?**
+Después de **5 contraseñas incorrectas** seguidas con el mismo correo, el ingreso se bloquea **15 minutos** para ese correo, incluso con la contraseña correcta. Es una protección contra quien intenta adivinar contraseñas. Cuando quedan 2 intentos, la app avisa. Basta con esperar; si la persona olvidó su contraseña, un administrador puede ponerle una nueva desde **Empleados** o **Usuarios** (el bloqueo igual dura hasta que pasen los 15 minutos).
 
 **¿La sesión se cierra sola?**
 Sí, por seguridad:

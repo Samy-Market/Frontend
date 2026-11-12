@@ -2,10 +2,10 @@ import { FormEvent, useState } from 'react';
 import { PageHeader } from './AdminLayout';
 import { useToast } from '@/components/toast';
 import { Badge, Button, Card, EmptyState, ErrorState, Field, inputClass, Modal, Spinner } from '@/components/ui';
-import { cn, justificationLabel, justificationTone } from '@/lib/styles';
+import { cn, justificationLabel, justificationTarget, justificationTone } from '@/lib/styles';
 import { useJustifications, useReviewJustification } from '@/hooks/admin';
 import { errorMessage } from '@/lib/api';
-import { formatDateTime, formatLate } from '@/lib/time';
+import { formatDateTime, formatDayKey, formatLate } from '@/lib/time';
 import type { Justification, JustificationStatus } from '@/lib/types';
 
 const tabs: { key: JustificationStatus | undefined; label: string }[] = [
@@ -68,9 +68,19 @@ export default function Justifications() {
                   <Badge tone={justificationTone[j.status]}>{justificationLabel[j.status]}</Badge>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                  <span className="font-medium">{j.attendance.type === 'IN' ? 'Ingreso' : 'Salida'}</span>
-                  <span className="tabular-nums">{formatDateTime(j.attendance.timestamp)}</span>
-                  {j.attendance.isLate && <Badge tone="red">Atraso {formatLate(j.attendance.lateMinutes)}</Badge>}
+                  {j.attendance ? (
+                    <>
+                      <span className="font-medium">{j.attendance.type === 'IN' ? 'Ingreso' : 'Salida'}</span>
+                      <span className="tabular-nums">{formatDateTime(j.attendance.timestamp)}</span>
+                      {j.attendance.isLate && <Badge tone="red">Atraso {formatLate(j.attendance.lateMinutes)}</Badge>}
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium">Ausencia</span>
+                      <span>{j.date ? formatDayKey(j.date) : '—'}</span>
+                      <Badge tone="red">No marcó</Badge>
+                    </>
+                  )}
                 </div>
                 <p className="mt-3 flex-1 whitespace-pre-line text-sm text-slate-700">{j.reason}</p>
                 <p className="mt-2 text-xs text-slate-500">Enviada el {formatDateTime(j.createdAt)}</p>
@@ -148,8 +158,7 @@ function ReviewModal({ state, onClose }: { state: { j: Justification; decision: 
       {state && (
         <form id="review-form" onSubmit={submit} className="space-y-4">
           <p className="text-sm text-slate-700">
-            {state.j.employee.fullName} · {state.j.attendance.type === 'IN' ? 'Ingreso' : 'Salida'} del{' '}
-            {formatDateTime(state.j.attendance.timestamp)}
+            {state.j.employee.fullName} · {justificationTarget(state.j)}
           </p>
           <Field label="Nota para el empleado (opcional)" htmlFor="review-note" error={error ?? undefined}>
             <textarea

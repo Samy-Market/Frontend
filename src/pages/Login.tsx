@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { FormEvent, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { homeFor, isAdminRole, useAuth } from '@/auth/auth';
 import { Logo } from '@/components/Brand';
 import { ThemeCycleButton } from '@/components/ThemeToggle';
@@ -96,6 +96,11 @@ export default function Login() {
           <Button type="submit" className="w-full py-3 text-[15px]" loading={loading} disabled={!email || !password}>
             Ingresar
           </Button>
+          <p className="text-center text-sm">
+            <Link to="/recuperar" className="text-brand-700 hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </p>
         </form>
       </div>
     </main>

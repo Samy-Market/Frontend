@@ -3,10 +3,12 @@ import { useToast } from '@/components/toast';
 import { Button, Field, inputClass, Modal } from '@/components/ui';
 import { useCreateJustification } from '@/hooks/employee';
 import { errorMessage } from '@/lib/api';
-import { formatDateTime, formatLate } from '@/lib/time';
+import { formatDateTime, formatDayKey, formatLate } from '@/lib/time';
 import type { MarkRecord } from '@/lib/types';
 
-export function JustifyModal({ record, onClose }: { record: MarkRecord | null; onClose: () => void }) {
+export type JustifyTarget = { kind: 'mark'; record: MarkRecord } | { kind: 'absence'; date: string };
+
+export function JustifyModal({ target, onClose }: { target: JustifyTarget | null; onClose: () => void }) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const create = useCreateJustification();
@@ -14,13 +16,13 @@ export function JustifyModal({ record, onClose }: { record: MarkRecord | null; o
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!record) return;
+    if (!target) return;
     if (reason.trim().length < 10) {
       setError('Describe el motivo con al menos 10 caracteres.');
       return;
     }
     create.mutate(
-      { attendanceId: record.id, reason: reason.trim() },
+      target.kind === 'mark' ? { attendanceId: target.record.id, reason: reason.trim() } : { date: target.date, reason: reason.trim() },
       {
         onSuccess: () => {
           toast.success('Solicitud enviada', 'Tu supervisor la revisará pronto.');
@@ -33,9 +35,9 @@ export function JustifyModal({ record, onClose }: { record: MarkRecord | null; o
 
   return (
     <Modal
-      open={!!record}
+      open={!!target}
       onClose={onClose}
-      title="Solicitar corrección"
+      title={target?.kind === 'absence' ? 'Justificar ausencia' : 'Solicitar corrección'}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -47,16 +49,29 @@ export function JustifyModal({ record, onClose }: { record: MarkRecord | null; o
         </>
       }
     >
-      {record && (
+      {target && (
         <form id="justify-form" onSubmit={submit} className="space-y-4">
           <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
-            <span className="font-medium">{record.type === 'IN' ? 'Ingreso' : 'Salida'}</span> del {formatDateTime(record.timestamp)}
-            {record.isLate && <span className="text-amber-700"> · {formatLate(record.lateMinutes)} de atraso</span>}
+            {target.kind === 'mark' ? (
+              <>
+                <span className="font-medium">{target.record.type === 'IN' ? 'Ingreso' : 'Salida'}</span> del{' '}
+                {formatDateTime(target.record.timestamp)}
+                {target.record.isLate && <span className="text-amber-700"> · {formatLate(target.record.lateMinutes)} de atraso</span>}
+              </>
+            ) : (
+              <>
+                <span className="font-medium">Ausencia</span> del {formatDayKey(target.date)} · no hay marcaciones
+              </>
+            )}
           </div>
           <Field
             label="Motivo"
             htmlFor="reason"
-            hint="Explica qué pasó (por ejemplo: cita médica, olvido de marcar salida, problema de transporte)."
+            hint={
+              target.kind === 'absence'
+                ? 'Explica por qué no asististe (por ejemplo: cita médica, calamidad doméstica, permiso acordado).'
+                : 'Explica qué pasó (por ejemplo: cita médica, olvido de marcar salida, problema de transporte).'
+            }
             error={error ?? undefined}
           >
             <textarea

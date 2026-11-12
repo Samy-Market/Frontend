@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Logo } from '@/components/Brand';
 import { ThemeCycleButton, ThemeSegmented } from '@/components/ThemeToggle';
 import { useAuth } from '@/auth/auth';
+import { ChangePasswordModal } from '@/components/ChangePasswordModal';
 import { ConnectionBadge } from '@/components/ui';
 import { cn } from '@/lib/styles';
 import { useJustifications } from '@/hooks/admin';
@@ -39,6 +41,11 @@ const sections: { title?: string; items: NavItem[] }[] = [
         badge: true,
         icon: 'M9 12h6m-6 4h6M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z',
       },
+      {
+        to: '/admin/feriados',
+        label: 'Feriados y permisos',
+        icon: 'M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm4 9 2 2 4-4',
+      },
       { to: '/admin/reportes', label: 'Reportes', icon: 'M4 19V5m0 14h16M8 15v-4m4 4V8m4 7v-6' },
     ],
   },
@@ -51,6 +58,12 @@ const sections: { title?: string; items: NavItem[] }[] = [
         adminOnly: true,
         icon: 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 10v-1a7 7 0 0 1 14 0v1M19 8v6m3-3h-6',
       },
+      {
+        to: '/admin/auditoria',
+        label: 'Auditoría',
+        adminOnly: true,
+        icon: 'M12 3 4 6v6c0 4.4 3.4 8.3 8 9 4.6-.7 8-4.6 8-9V6l-8-3Zm-3 9 2 2 4-4',
+      },
     ],
   },
 ];
@@ -59,6 +72,7 @@ const roleLabel = { ADMIN: 'Administrador', SUPERVISOR: 'Supervisor', EMPLOYEE: 
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
+  const [changingPassword, setChangingPassword] = useState(false);
   const { state } = useSocket();
   const pending = useJustifications('PENDING');
   const pendingCount = pending.data?.length ?? 0;
@@ -137,9 +151,14 @@ export default function AdminLayout() {
           <ThemeSegmented className="mb-4" />
           <p className="truncate text-sm font-medium">{user?.email}</p>
           <p className="text-xs text-slate-500">{user ? roleLabel[user.role] : ''}</p>
-          <button onClick={logout} className="mt-3 text-sm text-brand-700 hover:underline">
-            Cerrar sesión
-          </button>
+          <div className="mt-3 flex flex-col items-start gap-1.5">
+            <button onClick={() => setChangingPassword(true)} className="text-sm text-brand-700 hover:underline">
+              Cambiar contraseña
+            </button>
+            <button onClick={logout} className="text-sm text-brand-700 hover:underline">
+              Cerrar sesión
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -150,17 +169,37 @@ export default function AdminLayout() {
         <header className="flex items-center justify-end gap-2 px-4 pt-3 lg:hidden">
           <ConnectionBadge state={state} />
           <ThemeCycleButton />
+          <button
+            onClick={() => setChangingPassword(true)}
+            className="rounded-full p-2 text-slate-600 hover:bg-black/5"
+            aria-label="Cambiar contraseña"
+            title="Cambiar contraseña"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-[18px] w-[18px]"
+              aria-hidden
+            >
+              <circle cx="8" cy="15" r="4" />
+              <path d="m10.85 12.15 8.65-8.65M18 5l2 2M15 8l2 2" />
+            </svg>
+          </button>
           <button onClick={logout} className="rounded-full px-3 py-1 text-sm text-brand-700 hover:bg-black/5">
             Salir
           </button>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8">
-          {}
           <div key={location.pathname} className="animate-fade-up">
             <Outlet />
           </div>
         </main>
       </div>
+      <ChangePasswordModal open={changingPassword} onClose={() => setChangingPassword(false)} />
     </div>
   );
 }

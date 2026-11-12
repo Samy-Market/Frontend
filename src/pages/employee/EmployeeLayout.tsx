@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Mark } from '@/components/Brand';
 import { ThemeCycleButton } from '@/components/ThemeToggle';
 import { useAuth } from '@/auth/auth';
+import { ChangePasswordModal } from '@/components/ChangePasswordModal';
 import { ConnectionBadge } from '@/components/ui';
 import { cn } from '@/lib/styles';
 import { useSocket } from '@/realtime/socket';
@@ -18,6 +20,7 @@ const tabs = [
 
 export default function EmployeeLayout() {
   const { user, logout } = useAuth();
+  const [changingPassword, setChangingPassword] = useState(false);
   const { state } = useSocket();
   const firstName = user?.employee?.fullName.split(' ')[0] ?? '';
   const location = useLocation();
@@ -36,6 +39,26 @@ export default function EmployeeLayout() {
           <div className="flex items-center gap-1">
             <ConnectionBadge state={state} />
             <ThemeCycleButton />
+            <button
+              onClick={() => setChangingPassword(true)}
+              className="rounded-full p-2 text-slate-600 hover:bg-black/5"
+              aria-label="Cambiar contraseña"
+              title="Cambiar contraseña"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-[18px] w-[18px]"
+                aria-hidden
+              >
+                <circle cx="8" cy="15" r="4" />
+                <path d="m10.85 12.15 8.65-8.65M18 5l2 2M15 8l2 2" />
+              </svg>
+            </button>
             <button onClick={logout} className="rounded-full px-3 py-1 text-sm text-brand-700 hover:bg-black/5">
               Salir
             </button>
@@ -81,6 +104,7 @@ export default function EmployeeLayout() {
           ))}
         </ul>
       </nav>
+      <ChangePasswordModal open={changingPassword} onClose={() => setChangingPassword(false)} />
     </div>
   );
 }

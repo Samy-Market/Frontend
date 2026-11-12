@@ -2,6 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { qk } from '@/lib/queryClient';
 import type {
+  UnassignPreviewItem,
+  Holiday,
+  Leave,
+  LeaveKind,
   AssignResult,
   Assignment,
   AttendanceReport,
@@ -118,6 +122,14 @@ export const useAttendanceReport = (params: { from: string; to: string; employee
   });
 };
 
+export function useDeleteStaffUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<{ deleted: boolean }>(`/users/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.staffUsers }),
+  });
+}
+
 export const useStaffUsers = () => useQuery({ queryKey: qk.staffUsers, queryFn: () => api.get<StaffUser[]>('/users') });
 
 export interface StaffUserInput {
@@ -206,10 +218,19 @@ export const useScheduleMembers = (scheduleId: string | null) =>
 export function useUnassign() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (ids: string[]) => api.post<UnassignResult>('/schedule-assignments/unassign', { ids }),
+    mutationFn: (body: { ids: string[]; restorePrevious: boolean }) => api.post<UnassignResult>('/schedule-assignments/unassign', body),
     onSuccess: () => invalidateScheduleData(qc),
   });
 }
+
+export const useUnassignPreview = (ids: string[]) =>
+  useQuery({
+    queryKey: ['unassign-preview', ids],
+    queryFn: () => api.post<UnassignPreviewItem[]>('/schedule-assignments/unassign/preview', { ids }),
+    enabled: ids.length > 0,
+    staleTime: 0,
+    gcTime: 0,
+  });
 
 export const useExpiring = (days: number) =>
   useQuery({ queryKey: qk.expiring(days), queryFn: () => api.get<ExpiringAssignment[]>(`/schedules/expiring?days=${days}`) });
@@ -228,6 +249,9 @@ export interface SiteInput {
   name: string;
   address: string | null;
   active: boolean;
+  lat: number | null;
+  lng: number | null;
+  radiusMeters: number | null;
 }
 
 function invalidateSiteData(qc: ReturnType<typeof useQueryClient>) {
@@ -280,5 +304,51 @@ export function useDeleteTransfer() {
   return useMutation({
     mutationFn: (id: string) => api.delete<{ deleted: boolean }>(`/transfers/${id}`),
     onSuccess: () => invalidateSiteData(qc),
+  });
+}
+
+function invalidateTimeOff(qc: ReturnType<typeof useQueryClient>) {
+  void qc.invalidateQueries({ queryKey: ['holidays'] });
+  void qc.invalidateQueries({ queryKey: qk.leavesAll });
+  void qc.invalidateQueries({ queryKey: qk.today });
+  void qc.invalidateQueries({ queryKey: ['reports'] });
+}
+
+export const useHolidays = (year: number) =>
+  useQuery({ queryKey: qk.holidays(year), queryFn: () => api.get<Holiday[]>(`/holidays?year=${year}`) });
+
+export function useCreateHoliday() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { date: string; name: string }) => api.post<Holiday>('/holidays', data),
+    onSuccess: () => invalidateTimeOff(qc),
+  });
+}
+
+export function useDeleteHoliday() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<{ deleted: boolean }>(`/holidays/${id}`),
+    onSuccess: () => invalidateTimeOff(qc),
+  });
+}
+
+export const useLeaves = (scope: 'CURRENT' | 'ALL') =>
+  useQuery({ queryKey: qk.leaves(scope), queryFn: () => api.get<Leave[]>(`/leaves?scope=${scope}`) });
+
+export function useCreateLeave() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { employeeIds: string[]; kind: LeaveKind; startDate: string; endDate: string; note?: string }) =>
+      api.post<{ created: number }>('/leaves', data),
+    onSuccess: () => invalidateTimeOff(qc),
+  });
+}
+
+export function useCancelLeave() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete<{ deleted?: boolean; ended?: boolean; endDate?: string }>(`/leaves/${id}`),
+    onSuccess: () => invalidateTimeOff(qc),
   });
 }

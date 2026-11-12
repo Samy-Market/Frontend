@@ -14,18 +14,23 @@ import {
   shiftMonth,
   todayKey,
 } from '@/lib/time';
-import type { Justification, MarkRecord } from '@/lib/types';
-import { JustifyModal } from './JustifyModal';
+import type { Justification } from '@/lib/types';
+import { JustifyModal, JustifyTarget } from './JustifyModal';
 
 export default function EmployeeHistory() {
   const [month, setMonth] = useState(currentMonth);
   const monthQ = useMyMonth(month);
   const justQ = useMyJustifications();
-  const [justifying, setJustifying] = useState<MarkRecord | null>(null);
+  const [justifying, setJustifying] = useState<JustifyTarget | null>(null);
 
   const byAttendance = useMemo(() => {
     const map = new Map<string, Justification>();
-    for (const j of justQ.data ?? []) if (!map.has(j.attendanceId)) map.set(j.attendanceId, j);
+    for (const j of justQ.data ?? []) if (j.attendanceId && !map.has(j.attendanceId)) map.set(j.attendanceId, j);
+    return map;
+  }, [justQ.data]);
+  const byDate = useMemo(() => {
+    const map = new Map<string, Justification>();
+    for (const j of justQ.data ?? []) if (j.date && !map.has(j.date)) map.set(j.date, j);
     return map;
   }, [justQ.data]);
 
@@ -109,11 +114,14 @@ export default function EmployeeHistory() {
                                 : 'Sin horario'}
                           </p>
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {d.isLate && <Badge tone="amber">Atraso {formatLate(d.lateMinutes)}</Badge>}
+                            {d.isLate && !d.lateJustified && <Badge tone="amber">Atraso {formatLate(d.lateMinutes)}</Badge>}
+                            {d.lateJustified && <Badge tone="green">Atraso {formatLate(d.lateMinutes)} justificado</Badge>}
                             {d.preEntryMinutes > 0 && <Badge tone="sky">Preingreso {formatLate(d.preEntryMinutes)}</Badge>}
                             {inProgress && <Badge tone="sky">Jornada en curso</Badge>}
                             {abandoned && <Badge tone="red">Jornada abierta (sin salida)</Badge>}
                             {d.absent && <Badge tone="red">Ausente</Badge>}
+                            {d.absenceJustified && <Badge tone="green">Ausencia justificada</Badge>}
+                            {d.dayOff && <Badge tone="green">{d.dayOff.label}</Badge>}
                           </div>
                         </div>
                         <div className="text-right">
@@ -121,10 +129,22 @@ export default function EmployeeHistory() {
                           <p className="text-xs text-slate-500">horas</p>
                         </div>
                       </div>
-                      {d.absent && (
-                        <p className="px-4 py-2.5 text-sm text-slate-500">
-                          No hay marcaciones este día. Si fue un error, comunícate con tu supervisor.
-                        </p>
+                      {(d.absent || d.absenceJustified) && (
+                        <div className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm">
+                          <p className="text-slate-500">No hay marcaciones este día.</p>
+                          {byDate.get(d.date) ? (
+                            <Badge tone={justificationTone[byDate.get(d.date)!.status]}>
+                              Solicitud {justificationLabel[byDate.get(d.date)!.status].toLowerCase()}
+                            </Badge>
+                          ) : (
+                            <button
+                              onClick={() => setJustifying({ kind: 'absence', date: d.date })}
+                              className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
+                            >
+                              Justificar
+                            </button>
+                          )}
+                        </div>
                       )}
                       <ul className="divide-y divide-slate-100">
                         {d.records.map((r) => {
@@ -140,7 +160,7 @@ export default function EmployeeHistory() {
                                 <Badge tone={justificationTone[j.status]}>Solicitud {justificationLabel[j.status].toLowerCase()}</Badge>
                               ) : (
                                 <button
-                                  onClick={() => setJustifying(r)}
+                                  onClick={() => setJustifying({ kind: 'mark', record: r })}
                                   className="rounded-md px-2 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
                                 >
                                   Justificar
@@ -160,7 +180,11 @@ export default function EmployeeHistory() {
         </>
       )}
 
-      <JustifyModal key={justifying?.id ?? 'closed'} record={justifying} onClose={() => setJustifying(null)} />
+      <JustifyModal
+        key={justifying ? (justifying.kind === 'mark' ? justifying.record.id : justifying.date) : 'closed'}
+        target={justifying}
+        onClose={() => setJustifying(null)}
+      />
     </div>
   );
 }

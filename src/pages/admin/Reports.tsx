@@ -160,9 +160,38 @@ export default function Reports() {
           <dl className="stagger mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
             <Stat label="Horas trabajadas" value={formatMinutesShort(data.totals.workedMinutes)} />
             <Stat label="Horas suplementarias" value={formatMinutesShort(data.totals.overtimeMinutes)} />
-            <Stat label="Días trabajados" value={`${data.totals.daysWorked} / ${data.totals.scheduledDays}`} />
-            <Stat label="Ausencias" value={data.totals.absences} tone={data.totals.absences ? 'text-red-700' : undefined} />
-            <Stat label="Días con atraso" value={data.totals.lateDays} tone={data.totals.lateDays ? 'text-red-700' : undefined} />
+            <Stat
+              label="Días trabajados"
+              value={`${data.totals.daysWorked} / ${data.totals.scheduledDays}`}
+              hint={
+                [
+                  data.totals.holidays ? `${data.totals.holidays} feriado${data.totals.holidays > 1 ? 's' : ''}` : '',
+                  data.totals.leaveDays ? `${data.totals.leaveDays} día${data.totals.leaveDays > 1 ? 's' : ''} de permiso` : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || undefined
+              }
+            />
+            <Stat
+              label="Ausencias"
+              value={data.totals.absences}
+              tone={data.totals.absences ? 'text-red-700' : undefined}
+              hint={
+                data.totals.justifiedAbsences
+                  ? `+${data.totals.justifiedAbsences} justificada${data.totals.justifiedAbsences > 1 ? 's' : ''}`
+                  : undefined
+              }
+            />
+            <Stat
+              label="Días con atraso"
+              value={data.totals.lateDays}
+              tone={data.totals.lateDays ? 'text-red-700' : undefined}
+              hint={
+                data.totals.justifiedLateDays
+                  ? `+${data.totals.justifiedLateDays} justificado${data.totals.justifiedLateDays > 1 ? 's' : ''}`
+                  : undefined
+              }
+            />
             <Stat label="Minutos de atraso" value={data.totals.lateMinutes} tone={data.totals.lateMinutes ? 'text-red-700' : undefined} />
             <Stat
               label="Jornadas abiertas"
@@ -231,14 +260,30 @@ export default function Reports() {
                           <td className={cn(tdClass, 'whitespace-nowrap text-right tabular-nums')}>
                             {e.totals.daysWorked} / {e.totals.scheduledDays}
                           </td>
-                          <td className={cn(tdClass, 'text-right tabular-nums', e.totals.absences > 0 && 'font-medium text-red-700')}>
+                          <td
+                            className={cn(
+                              tdClass,
+                              'whitespace-nowrap text-right tabular-nums',
+                              e.totals.absences > 0 && 'font-medium text-red-700',
+                            )}
+                          >
                             {e.totals.absences}
+                            {e.totals.justifiedAbsences > 0 && (
+                              <span className="ml-1 text-xs font-normal text-emerald-700" title="Ausencias justificadas: no suman">
+                                +{e.totals.justifiedAbsences} just.
+                              </span>
+                            )}
                           </td>
                           <td className={cn(tdClass, 'text-right tabular-nums font-medium')}>
                             {formatMinutesShort(e.totals.workedMinutes)}
                           </td>
-                          <td className={cn(tdClass, 'text-right tabular-nums', e.totals.lateDays > 0 && 'text-red-700')}>
+                          <td className={cn(tdClass, 'whitespace-nowrap text-right tabular-nums', e.totals.lateDays > 0 && 'text-red-700')}>
                             {e.totals.lateDays}
+                            {e.totals.justifiedLateDays > 0 && (
+                              <span className="ml-1 text-xs text-emerald-700" title="Atrasos justificados: no suman">
+                                +{e.totals.justifiedLateDays} just.
+                              </span>
+                            )}
                           </td>
                           <td className={cn(tdClass, 'text-right tabular-nums')}>{e.totals.lateMinutes}</td>
                           <td className={cn(tdClass, 'text-right tabular-nums', e.totals.openSessions > 0 && 'text-amber-700')}>
@@ -311,12 +356,15 @@ export default function Reports() {
                                       <td className="py-1.5">
                                         <div className="flex flex-wrap gap-1">
                                           {d.isLate && <Badge tone="red">Atraso {formatLate(d.lateMinutes)}</Badge>}
+                                          {d.lateJustified && <Badge tone="green">Atraso {formatLate(d.lateMinutes)} justificado</Badge>}
                                           {d.preEntryMinutes > 0 && <Badge tone="sky">Preingreso {formatLate(d.preEntryMinutes)}</Badge>}
                                           {d.overtimeMinutes > 0 && (
                                             <Badge tone="brand">Suplementarias {formatLate(d.overtimeMinutes)}</Badge>
                                           )}
                                           {d.openSession && <Badge tone="amber">Jornada abierta</Badge>}
                                           {d.absent && <Badge tone="red">Ausente</Badge>}
+                                          {d.absenceJustified && <Badge tone="green">Ausencia justificada</Badge>}
+                                          {d.dayOff && <Badge tone="green">{d.dayOff.label}</Badge>}
                                           {!d.absent && d.plan.kind === 'REST' && <Badge tone="sky">Trabajó en descanso</Badge>}
                                         </div>
                                       </td>
@@ -343,11 +391,16 @@ export default function Reports() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string | number; tone?: string }) {
+function Stat({ label, value, tone, hint }: { label: string; value: string | number; tone?: string; hint?: string }) {
   return (
     <Card className="p-4">
       <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
       <dd className={cn('mt-1 text-[28px] font-semibold leading-tight tracking-tight tabular-nums', tone)}>{value}</dd>
+      {hint && (
+        <dd className="mt-0.5 text-xs text-emerald-700" title="Con justificación aprobada: no suman">
+          {hint}
+        </dd>
+      )}
     </Card>
   );
 }

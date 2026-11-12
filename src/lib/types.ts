@@ -45,6 +45,8 @@ export interface EmployeeDayStatus {
   missingAfterStart: boolean;
   todayPlan: DayPlan;
   todaySite: DaySite;
+  dayOff: DayOff | null;
+  location: { required: boolean; radiusMeters: number | null };
 }
 
 export interface SiteRef {
@@ -64,6 +66,9 @@ export interface Site {
   name: string;
   address: string | null;
   active: boolean;
+  lat: number | null;
+  lng: number | null;
+  radiusMeters: number | null;
   activeEmployees?: number;
   incomingTransfersToday?: number;
 }
@@ -139,6 +144,9 @@ export interface DaySummary {
 export interface MonthDay extends DaySummary {
   plan: DayPlan;
   absent: boolean;
+  absenceJustified: boolean;
+  lateJustified: boolean;
+  dayOff: DayOff | null;
 }
 
 export interface MonthHistory {
@@ -160,7 +168,8 @@ export interface MySchedule {
 
 export interface Justification {
   id: string;
-  attendanceId: string;
+  attendanceId: string | null;
+  date: string | null;
   employeeId: string;
   reason: string;
   status: JustificationStatus;
@@ -168,7 +177,7 @@ export interface Justification {
   reviewedAt: string | null;
   reviewNote: string | null;
   createdAt: string;
-  attendance: { id: string; type: MarkType; timestamp: string; isLate: boolean; lateMinutes: number };
+  attendance: { id: string; type: MarkType; timestamp: string; isLate: boolean; lateMinutes: number } | null;
   employee: { id: string; fullName: string; position: string };
   reviewer: { id: string; email: string } | null;
 }
@@ -196,7 +205,16 @@ export interface TodayItem extends EmployeeDayStatus {
 export interface TodayResponse {
   date: string;
   generatedAt: string;
-  totals: { employees: number; inside: number; outside: number; notMarked: number; late: number; resting: number; unassigned: number };
+  totals: {
+    employees: number;
+    inside: number;
+    outside: number;
+    notMarked: number;
+    late: number;
+    resting: number;
+    unassigned: number;
+    dayOff: number;
+  };
   items: TodayItem[];
 }
 
@@ -251,9 +269,19 @@ export interface ScheduleMember {
   status: 'PAST' | 'CURRENT' | 'UPCOMING';
 }
 
+export interface UnassignPreviewItem {
+  id: string;
+  employee: { id: string; fullName: string };
+  schedule: { id: string; name: string };
+  action: 'delete' | 'end' | 'none';
+  gap: { from: string; to: string | null } | null;
+  previous: { schedule: { id: string; name: string }; until: string | null; canRestore: boolean } | null;
+}
+
 export interface UnassignResult {
   deleted: number;
   ended: number;
+  restored: number;
   skipped: number;
 }
 
@@ -276,12 +304,17 @@ export interface ReportTotals {
   daysWorked: number;
   lateDays: number;
   lateMinutes: number;
+  justifiedLateDays: number;
+  justifiedLateMinutes: number;
   preEntryDays: number;
   preEntryMinutes: number;
   openSessions: number;
   marks: number;
   scheduledDays: number;
   absences: number;
+  justifiedAbsences: number;
+  holidays: number;
+  leaveDays: number;
 }
 
 export interface ReportDay {
@@ -293,11 +326,22 @@ export interface ReportDay {
   overtimeMinutes: number;
   isLate: boolean;
   lateMinutes: number;
+  lateJustified: boolean;
   openSession: boolean;
   plan: DayPlan;
   absent: boolean;
+  absenceJustified: boolean;
+  dayOff: DayOff | null;
   site: SiteRef;
-  marks: { id: string; type: MarkType; timestamp: string; isLate: boolean; lateMinutes: number; preEntryMinutes: number }[];
+  marks: {
+    id: string;
+    type: MarkType;
+    timestamp: string;
+    isLate: boolean;
+    lateMinutes: number;
+    preEntryMinutes: number;
+    justified: boolean;
+  }[];
 }
 
 export interface EmployeeReport {
@@ -329,4 +373,26 @@ export interface StaffUser {
   active: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export type LeaveKind = 'VACATION' | 'MEDICAL' | 'PERSONAL';
+export type DayOff = { kind: 'HOLIDAY'; label: string } | { kind: 'LEAVE'; leaveKind: LeaveKind; label: string };
+
+export interface Holiday {
+  id: string;
+  date: string;
+  name: string;
+}
+
+export interface Leave {
+  id: string;
+  employeeId: string;
+  employee: { id: string; fullName: string; position: string };
+  kind: LeaveKind;
+  label: string;
+  startDate: string;
+  endDate: string;
+  note: string | null;
+  createdBy: string;
+  status: 'PAST' | 'CURRENT' | 'UPCOMING';
 }

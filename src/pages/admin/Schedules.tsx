@@ -19,7 +19,9 @@ import {
   useSchedules,
   useShifts,
   useUnassign,
+  useUnassignPreview,
 } from '@/hooks/admin';
+import { UnassignSummary } from '@/components/UnassignSummary';
 import { ConfirmDelete } from '@/components/ConfirmDelete';
 import { ApiError, errorMessage } from '@/lib/api';
 import { addDaysKey, addMonthsKey, daysUntil, formatDayKeyNumeric, todayKey } from '@/lib/time';
@@ -551,11 +553,13 @@ function MembersModal({ schedule, canEdit, onClose }: { schedule: Schedule | nul
   const toast = useToast();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
+  const [restore, setRestore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const list = members.data ?? [];
   const today = todayKey();
   const removable = list.filter((m) => m.endDate !== today);
   const chosen = removable.filter((m) => selected.has(m.id));
+  const preview = useUnassignPreview(confirming ? chosen.map((m) => m.id) : []);
   const allSelected = removable.length > 0 && chosen.length === removable.length;
 
   const toggle = (id: string) =>
@@ -568,12 +572,13 @@ function MembersModal({ schedule, canEdit, onClose }: { schedule: Schedule | nul
 
   const remove = () =>
     unassign.mutate(
-      chosen.map((m) => m.id),
+      { ids: chosen.map((m) => m.id), restorePrevious: restore },
       {
         onSuccess: (r) => {
           const parts = [
             r.ended && `${r.ended} ${r.ended === 1 ? 'termina' : 'terminan'} hoy`,
             r.deleted && `${r.deleted} ${r.deleted === 1 ? 'próximo eliminado' : 'próximos eliminados'}`,
+            r.restored && `${r.restored} ${r.restored === 1 ? 'vuelve' : 'vuelven'} a su horario anterior`,
           ]
             .filter(Boolean)
             .join(' · ');
@@ -600,7 +605,7 @@ function MembersModal({ schedule, canEdit, onClose }: { schedule: Schedule | nul
             <Button variant="secondary" onClick={() => setConfirming(false)}>
               Volver
             </Button>
-            <Button variant="danger" loading={unassign.isPending} onClick={remove}>
+            <Button variant="danger" loading={unassign.isPending} disabled={preview.isPending || preview.isError} onClick={remove}>
               Sí, quitar {chosen.length}
             </Button>
           </>
@@ -630,15 +635,9 @@ function MembersModal({ schedule, canEdit, onClose }: { schedule: Schedule | nul
         <div className="space-y-3 text-sm">
           <p>
             ¿Quitar a <strong>{chosen.length}</strong> {chosen.length === 1 ? 'empleado' : 'empleados'} del horario{' '}
-            <strong>{schedule?.name}</strong>?
+            <strong>{schedule?.name}</strong>? Así quedarán:
           </p>
-          <ul className="list-inside list-disc text-slate-600">
-            {chosen.some((m) => m.startDate < todayKey()) && (
-              <li>Quienes ya lo tienen vigente lo conservan hasta hoy y desde mañana quedan sin este horario.</li>
-            )}
-            {chosen.some((m) => m.startDate >= todayKey()) && <li>Las asignaciones que empiezan hoy o más adelante se eliminan.</li>}
-            <li>Las marcaciones y el historial no se tocan.</li>
-          </ul>
+          <UnassignSummary query={preview} restore={restore} onRestoreChange={setRestore} />
         </div>
       ) : (
         <>

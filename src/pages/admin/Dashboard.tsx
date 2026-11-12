@@ -76,9 +76,10 @@ export default function Dashboard() {
   const items = useMemo(() => {
     const term = q.trim().toLowerCase();
     return siteItems.filter((i) => {
-      const resting = i.todayPlan.kind === 'REST' && i.status === 'NOT_MARKED';
+      const free = i.todayPlan.kind === 'REST' || !!i.dayOff;
+      const resting = free && i.status === 'NOT_MARKED';
       if (filter === 'LATE' && !i.isLate) return false;
-      if (filter === 'REST' && i.todayPlan.kind !== 'REST') return false;
+      if (filter === 'REST' && !free) return false;
       if (filter === 'NOT_MARKED' && (i.status !== 'NOT_MARKED' || resting)) return false;
       if ((filter === 'INSIDE' || filter === 'OUTSIDE') && i.status !== filter) return false;
       if (term && !`${i.employee.fullName} ${i.employee.position} ${i.employee.documentId}`.toLowerCase().includes(term)) return false;
@@ -102,7 +103,7 @@ export default function Dashboard() {
     { key: 'OUTSIDE', label: 'Fuera', value: t.outside, tone: 'text-slate-600' },
     { key: 'NOT_MARKED', label: 'Sin marcar', value: t.notMarked, tone: 'text-amber-700' },
     { key: 'LATE', label: 'Con atraso', value: t.late, tone: 'text-red-700' },
-    { key: 'REST', label: 'Descansan hoy', value: t.resting, tone: 'text-slate-500' },
+    { key: 'REST', label: 'Descanso o libres', value: t.resting, tone: 'text-slate-500' },
   ];
 
   return (
@@ -271,12 +272,17 @@ function Row({ item: i, highlighted }: { item: TodayItem; highlighted: boolean }
         <div className="flex flex-wrap gap-1">
           {i.missingAfterStart ? (
             <Badge tone="red">No ha llegado</Badge>
+          ) : i.status === 'NOT_MARKED' && i.dayOff ? (
+            <Badge tone="green">{i.dayOff.label}</Badge>
           ) : i.status === 'NOT_MARKED' && i.todayPlan.kind === 'REST' ? (
             <Badge tone="slate">Descanso</Badge>
           ) : (
             <Badge tone={view.tone}>{view.label}</Badge>
           )}
           {i.status !== 'NOT_MARKED' && i.todayPlan.kind === 'REST' && <Badge tone="sky">En día de descanso</Badge>}
+          {i.status !== 'NOT_MARKED' && i.dayOff && (
+            <Badge tone="sky">Trabaja en {i.dayOff.kind === 'HOLIDAY' ? 'feriado' : 'permiso'}</Badge>
+          )}
           {i.isLate && <Badge tone="red">Atraso {formatLate(i.lateMinutes)}</Badge>}
           {i.preEntryMinutesToday > 0 && <Badge tone="sky">Preingreso {formatLate(i.preEntryMinutesToday)}</Badge>}
         </div>
@@ -305,10 +311,11 @@ function computeTotals(items: TodayItem[]): TodayResponse['totals'] {
     employees: items.length,
     inside: items.filter((i) => i.status === 'INSIDE').length,
     outside: items.filter((i) => i.status === 'OUTSIDE').length,
-    notMarked: items.filter((i) => i.status === 'NOT_MARKED' && i.todayPlan.kind !== 'REST').length,
+    notMarked: items.filter((i) => i.status === 'NOT_MARKED' && i.todayPlan.kind !== 'REST' && !i.dayOff).length,
     late: items.filter((i) => i.isLate).length,
-    resting: items.filter((i) => i.todayPlan.kind === 'REST').length,
+    resting: items.filter((i) => i.todayPlan.kind === 'REST' || i.dayOff).length,
     unassigned: items.filter((i) => i.todayPlan.kind === 'UNASSIGNED').length,
+    dayOff: items.filter((i) => i.dayOff).length,
   };
 }
 

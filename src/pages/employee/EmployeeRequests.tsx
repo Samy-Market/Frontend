@@ -1,5 +1,5 @@
 import { Badge, Card, EmptyState, ErrorState, Spinner } from '@/components/ui';
-import { justificationLabel, justificationTone } from '@/lib/styles';
+import { justificationLabel, justificationTarget, justificationTone } from '@/lib/styles';
 import { useMyJustifications } from '@/hooks/employee';
 import { errorMessage } from '@/lib/api';
 import { formatDateTime } from '@/lib/time';
@@ -11,7 +11,9 @@ export default function EmployeeRequests() {
     <div className="space-y-4">
       <div>
         <h1 className="text-lg font-semibold">Mis solicitudes</h1>
-        <p className="text-sm text-slate-500">Para crear una, ve al Historial y toca “Justificar” en la marcación.</p>
+        <p className="text-sm text-slate-500">
+          Para crear una, ve al Historial y toca “Justificar” en la marcación o en el día que no marcaste.
+        </p>
       </div>
 
       {q.isPending ? (
@@ -29,9 +31,7 @@ export default function EmployeeRequests() {
               <Card>
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-medium">
-                      {j.attendance.type === 'IN' ? 'Ingreso' : 'Salida'} · {formatDateTime(j.attendance.timestamp)}
-                    </p>
+                    <p className="text-sm font-medium">{justificationTarget(j)}</p>
                     <p className="text-xs text-slate-500">Enviada el {formatDateTime(j.createdAt)}</p>
                   </div>
                   <Badge tone={justificationTone[j.status]}>{justificationLabel[j.status]}</Badge>

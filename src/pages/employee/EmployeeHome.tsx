@@ -6,6 +6,7 @@ import { WEEKDAYS_SHORT, shiftHours } from '@/lib/schedule';
 import { useMark, useMySchedule, useMyStatus } from '@/hooks/employee';
 import { useNow } from '@/hooks/useNow';
 import { errorMessage } from '@/lib/api';
+import { DeviceLocation, getDeviceLocation } from '@/lib/geolocation';
 import { formatLate, formatLongDate, formatMinutes, formatTime, formatTimeWithSeconds, relativeDayLabel } from '@/lib/time';
 
 export default function EmployeeHome() {
@@ -13,6 +14,7 @@ export default function EmployeeHome() {
   const statusQ = useMyStatus();
   const mark = useMark();
   const [done, setDone] = useState<'IN' | 'OUT' | null>(null);
+  const [locating, setLocating] = useState(false);
   useEffect(() => {
     if (!done) return;
     const t = window.setTimeout(() => setDone(null), 1800);
@@ -29,24 +31,41 @@ export default function EmployeeHome() {
   const liveMinutes =
     s && inside ? s.workedMinutesToday + Math.max(0, Math.floor((now.getTime() - countFrom) / 60_000)) : (s?.workedMinutesToday ?? 0);
 
-  const onMark = () => {
-    if (!s || mark.isPending) return;
-    mark.mutate(s.nextType, {
-      onSuccess: (res) => {
-        setDone(res.attendance.type);
-        const time = formatTime(res.attendance.timestamp);
-        if (res.attendance.type === 'IN') {
-          if (res.attendance.isLate) {
-            toast.warning(`Ingreso registrado a las ${time}`, `Se registró con ${formatLate(res.attendance.lateMinutes)} de atraso.`);
+  const busy = mark.isPending || locating;
+
+  const onMark = async () => {
+    if (!s || busy) return;
+    let location: DeviceLocation | undefined;
+    if (s.location.required) {
+      setLocating(true);
+      try {
+        location = await getDeviceLocation();
+      } catch (err) {
+        toast.error('No se pudo obtener tu ubicación', errorMessage(err));
+        return;
+      } finally {
+        setLocating(false);
+      }
+    }
+    mark.mutate(
+      { expectedType: s.nextType, location },
+      {
+        onSuccess: (res) => {
+          setDone(res.attendance.type);
+          const time = formatTime(res.attendance.timestamp);
+          if (res.attendance.type === 'IN') {
+            if (res.attendance.isLate) {
+              toast.warning(`Ingreso registrado a las ${time}`, `Se registró con ${formatLate(res.attendance.lateMinutes)} de atraso.`);
+            } else {
+              toast.success(`Ingreso registrado a las ${time}`, '¡Que tengas una buena jornada!');
+            }
           } else {
-            toast.success(`Ingreso registrado a las ${time}`, '¡Que tengas una buena jornada!');
+            toast.success(`Salida registrada a las ${time}`, `Hoy llevas ${formatMinutes(res.status.workedMinutesToday)}.`);
           }
-        } else {
-          toast.success(`Salida registrada a las ${time}`, `Hoy llevas ${formatMinutes(res.status.workedMinutesToday)}.`);
-        }
+        },
+        onError: (err) => toast.error('No se pudo registrar la marcación', errorMessage(err)),
       },
-      onError: (err) => toast.error('No se pudo registrar la marcación', errorMessage(err)),
-    });
+    );
   };
 
   if (statusQ.isPending) {
@@ -81,14 +100,13 @@ export default function EmployeeHome() {
 
       <section className="flex justify-center py-4">
         <div className="relative">
-          {}
-          {!mark.isPending && !done && (
+          {!busy && !done && (
             <span aria-hidden className={cn('absolute inset-0 animate-halo rounded-full', blue ? 'bg-brand-700' : 'bg-ink')} />
           )}
           <button
             type="button"
-            onClick={onMark}
-            disabled={mark.isPending || !!done}
+            onClick={() => void onMark()}
+            disabled={busy || !!done}
             aria-describedby="estado-actual"
             className={cn(
               'relative flex h-56 w-56 flex-col items-center justify-center rounded-full transition-[transform,background] text-on-accent duration-300 ease-[var(--ease-apple)] active:scale-[0.96] focus-visible:outline-4 focus-visible:outline-offset-4 sm:h-64 sm:w-64',
@@ -113,10 +131,10 @@ export default function EmployeeHome() {
                 </svg>
                 <span className="mt-2 text-xl font-semibold">{done === 'IN' ? 'Ingreso registrado' : 'Salida registrada'}</span>
               </span>
-            ) : mark.isPending ? (
+            ) : busy ? (
               <span key="pending" className="flex animate-fade-in flex-col items-center">
                 <Spinner className="h-10 w-10" />
-                <span className="mt-3 text-lg font-medium">Registrando…</span>
+                <span className="mt-3 text-lg font-medium">{locating ? 'Verificando ubicación…' : 'Registrando…'}</span>
               </span>
             ) : (
               <span key={isIn ? 'in' : 'out'} className="flex animate-scale-in flex-col items-center">
@@ -142,8 +160,17 @@ export default function EmployeeHome() {
           </button>
         </div>
       </section>
+      {s.location.required && (
+        <p className="-mt-2 text-center text-xs text-slate-500">
+          Al marcar se verifica que estés en {s.todaySite.site.name} (a menos de {s.location.radiusMeters} m).
+        </p>
+      )}
 
-      <TodayShift plan={plan} site={s.todaySite} />
+      {s.dayOff ? (
+        <DayOffCard label={s.dayOff.label} holiday={s.dayOff.kind === 'HOLIDAY'} />
+      ) : (
+        <TodayShift plan={plan} site={s.todaySite} />
+      )}
 
       <Card>
         <div id="estado-actual" className="flex items-center justify-between">
@@ -271,5 +298,18 @@ function MyWeek() {
         </ul>
       </Card>
     </section>
+  );
+}
+
+function DayOffCard({ label, holiday }: { label: string; holiday: boolean }) {
+  return (
+    <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-center ring-1 ring-emerald-600/20">
+      <p className="font-semibold text-emerald-700">
+        {holiday ? `Hoy es ${label.replace('Feriado: ', 'feriado: ')}` : `Hoy estás de ${label.toLowerCase()}`}
+      </p>
+      <p className="text-xs text-emerald-700/80">
+        No necesitas marcar. Si igual vienes a trabajar, marca normalmente: no cuenta como atraso.
+      </p>
+    </div>
   );
 }

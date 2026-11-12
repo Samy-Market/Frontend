@@ -18,6 +18,8 @@ import {
   useUpdateTransfer,
 } from '@/hooks/admin';
 import { ApiError, errorMessage } from '@/lib/api';
+import { getDeviceLocation } from '@/lib/geolocation';
+import { DEFAULT_RADIUS, parseCoordinates } from '@/lib/geo';
 import { addDaysKey, daysUntil, formatDayKeyNumeric, todayKey } from '@/lib/time';
 import type { Site, Transfer } from '@/lib/types';
 
@@ -65,6 +67,9 @@ export default function Sites() {
                       {!s.active && <Badge>Inactiva</Badge>}
                     </h2>
                     <p className="mt-0.5 text-sm text-slate-500">{s.address || 'Sin dirección'}</p>
+                    <p className={cn('mt-1 text-xs', s.lat !== null ? 'text-brand-700' : 'text-slate-400')}>
+                      {s.lat !== null ? `Marcación solo a menos de ${s.radiusMeters} m de la sede` : 'Sin control de ubicación al marcar'}
+                    </p>
                   </div>
                   <svg
                     viewBox="0 0 24 24"
@@ -134,18 +139,43 @@ function SiteForm({ site, onClose }: { site: Site | 'new' | null; onClose: () =>
   const isNew = site === 'new';
   const save = useSaveSite();
   const toast = useToast();
-  const [form, setForm] = useState<SiteInput>(() =>
-    site && site !== 'new'
-      ? { name: site.name, address: site.address ?? '', active: site.active }
-      : { name: '', address: '', active: true },
+  const existing = site && site !== 'new' ? site : null;
+  const [form, setForm] = useState<Omit<SiteInput, 'lat' | 'lng' | 'radiusMeters'>>(() =>
+    existing ? { name: existing.name, address: existing.address ?? '', active: existing.active } : { name: '', address: '', active: true },
   );
+  const [coords, setCoords] = useState(existing?.lat != null && existing.lng != null ? `${existing.lat}, ${existing.lng}` : '');
+  const [radius, setRadius] = useState(String(existing?.radiusMeters ?? DEFAULT_RADIUS));
+  const [locating, setLocating] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const point = parseCoordinates(coords);
+
+  const fillCurrentLocation = async () => {
+    setLocating(true);
+    try {
+      const here = await getDeviceLocation();
+      setCoords(`${here.latitude.toFixed(6)}, ${here.longitude.toFixed(6)}`);
+      if (here.accuracy > 50) toast.warning('Ubicación aproximada', `El GPS indica ±${Math.round(here.accuracy)} m. Revísala en el mapa.`);
+    } catch (err) {
+      toast.error('No se pudo obtener la ubicación', errorMessage(err));
+    } finally {
+      setLocating(false);
+    }
+  };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) return setErrors(['El nombre de la sede es obligatorio.']);
+    const problems: string[] = [];
+    if (!form.name.trim()) problems.push('El nombre de la sede es obligatorio.');
+    if (point === 'invalid') problems.push('La ubicación debe ser "latitud, longitud", por ejemplo -2.170998, -79.922359.');
+    const radiusMeters = Number(radius);
+    if (point && point !== 'invalid' && (!Number.isInteger(radiusMeters) || radiusMeters < 30 || radiusMeters > 2000)) {
+      problems.push('El radio debe ser un número entero entre 30 y 2000 metros.');
+    }
+    if (problems.length) return setErrors(problems);
+    const location =
+      point && point !== 'invalid' ? { lat: point.lat, lng: point.lng, radiusMeters } : { lat: null, lng: null, radiusMeters: null };
     save.mutate(
-      { id: isNew ? undefined : (site as Site).id, data: { ...form, address: form.address?.trim() || null } },
+      { id: isNew ? undefined : (site as Site).id, data: { ...form, address: form.address?.trim() || null, ...location } },
       {
         onSuccess: (s) => {
           toast.success(isNew ? 'Sede creada' : 'Sede actualizada', s.name);
@@ -191,6 +221,59 @@ function SiteForm({ site, onClose }: { site: Site | 'new' | null; onClose: () =>
             onChange={(e) => setForm({ ...form, address: e.target.value })}
           />
         </Field>
+        <fieldset className="space-y-3 rounded-2xl bg-slate-50 p-3">
+          <legend className="sr-only">Control de ubicación</legend>
+          <p className="text-sm font-medium">Control de ubicación al marcar (opcional)</p>
+          <p className="text-xs text-slate-500">
+            Si indicas la ubicación, los empleados solo podrán marcar desde el celular cuando estén cerca de la sede. Déjala vacía para no
+            controlarla.
+          </p>
+          <Field
+            label="Ubicación (latitud, longitud)"
+            htmlFor="st-coords"
+            hint="En Google Maps, mantén presionado sobre la sede y copia los números que aparecen."
+          >
+            <input
+              id="st-coords"
+              className={inputClass}
+              inputMode="decimal"
+              placeholder="-2.170998, -79.922359"
+              value={coords}
+              onChange={(e) => setCoords(e.target.value)}
+            />
+          </Field>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" size="sm" variant="secondary" loading={locating} onClick={() => void fillCurrentLocation()}>
+              Usar mi ubicación actual
+            </Button>
+            {point && point !== 'invalid' && (
+              <a
+                href={`https://www.google.com/maps?q=${point.lat},${point.lng}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm text-brand-700 hover:underline"
+              >
+                Ver en el mapa
+              </a>
+            )}
+            {coords && (
+              <button type="button" className="text-sm text-slate-500 hover:underline" onClick={() => setCoords('')}>
+                Quitar ubicación
+              </button>
+            )}
+          </div>
+          {point && point !== 'invalid' && (
+            <Field label="Radio permitido (metros)" htmlFor="st-radius" hint="Entre 30 y 2000. 150 m cubre bien un local y su entrada.">
+              <input
+                id="st-radius"
+                className={inputClass}
+                inputMode="numeric"
+                value={radius}
+                onChange={(e) => setRadius(e.target.value.replace(/\D/g, ''))}
+              />
+            </Field>
+          )}
+        </fieldset>
         {!isNew && (
           <div className="flex items-center gap-2">
             <input

@@ -5,7 +5,7 @@ import { isAdminRole, useAuth } from '@/auth/auth';
 import { useToast } from '@/components/toast';
 import { API_URL } from '@/lib/api';
 import { qk } from '@/lib/queryClient';
-import { formatTime } from '@/lib/time';
+import { formatDayKey, formatTime } from '@/lib/time';
 import type { AttendanceMarkedEvent, Justification } from '@/lib/types';
 import { ConnectionState, SocketContext } from './socket';
 
@@ -70,8 +70,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     s.on('justification:reviewed', (j: Justification) => {
       void qc.invalidateQueries({ queryKey: qk.justificationsAll });
+      void qc.invalidateQueries({ queryKey: qk.myMonthAll });
       const label = statusLabel[j.status];
-      const msg = `Tu solicitud sobre la marcación de las ${formatTime(j.attendance.timestamp)} fue ${label}.`;
+      const about = j.attendance
+        ? `la marcación de las ${formatTime(j.attendance.timestamp)}`
+        : `la ausencia del ${j.date ? formatDayKey(j.date) : 'día'}`;
+      const msg = `Tu solicitud sobre ${about} fue ${label}.`;
       const note = j.reviewNote ? ` Nota: “${j.reviewNote}”` : '';
       if (j.status === 'APPROVED') toast.success('Justificación aprobada', msg + note);
       else toast.warning('Justificación rechazada', msg + note);
