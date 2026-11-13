@@ -69,7 +69,7 @@ export function JustifyModal({ target, onClose }: { target: JustifyTarget | null
             htmlFor="reason"
             hint={
               target.kind === 'absence'
-                ? 'Explica por qué no asististe (por ejemplo: cita médica, calamidad doméstica, permiso acordado).'
+                ? 'Explica qué pasó. Si viniste a trabajar pero olvidaste marcar, escribe a qué hora entraste y saliste (por ejemplo: "Entré 08:00 y salí 18:00").'
                 : 'Explica qué pasó (por ejemplo: cita médica, olvido de marcar salida, problema de transporte).'
             }
             error={error ?? undefined}

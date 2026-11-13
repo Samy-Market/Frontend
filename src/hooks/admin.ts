@@ -104,11 +104,61 @@ export const useJustifications = (status?: JustificationStatus) =>
 export function useReviewJustification() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, reviewNote }: { id: string; status: 'APPROVED' | 'REJECTED'; reviewNote?: string }) =>
-      api.patch<Justification>(`/justifications/${id}`, { status, ...(reviewNote ? { reviewNote } : {}) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.justificationsAll }),
+    mutationFn: ({
+      id,
+      status,
+      reviewNote,
+      exitTime,
+      workedFrom,
+      workedTo,
+      creditFrom,
+    }: {
+      id: string;
+      status: 'APPROVED' | 'REJECTED';
+      reviewNote?: string;
+      exitTime?: string;
+      workedFrom?: string;
+      workedTo?: string;
+      creditFrom?: string;
+    }) =>
+      api.patch<Justification>(`/justifications/${id}`, {
+        status,
+        ...(reviewNote ? { reviewNote } : {}),
+        ...(exitTime ? { exitTime } : {}),
+        ...(workedFrom && workedTo ? { workedFrom, workedTo } : {}),
+        ...(creditFrom ? { creditFrom } : {}),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.justificationsAll });
+      void qc.invalidateQueries({ queryKey: ['reports'] });
+      void qc.invalidateQueries({ queryKey: qk.today });
+    },
   });
 }
+
+export interface MissingDay {
+  date: string;
+  shift: { startTime: string; endTime: string; toleranceMinutes: number } | null;
+}
+
+export interface ExitWindow {
+  inAt: string;
+  earliest: string;
+  latest: string;
+  suggested: string | null;
+}
+
+export const useJustificationCorrection = (id: string | null) =>
+  useQuery({
+    queryKey: ['justification-correction', id],
+    queryFn: () =>
+      api.get<{ missingExit: ExitWindow | null; missingDay: MissingDay | null; credit: ExitWindow | null }>(
+        `/justifications/${id}/correction`,
+      ),
+    enabled: !!id,
+    staleTime: 0,
+    gcTime: 0,
+  });
 
 export const useAttendanceReport = (params: { from: string; to: string; employeeId?: string; siteId?: string }, enabled: boolean) => {
   const search = new URLSearchParams({ from: params.from, to: params.to });
@@ -350,5 +400,17 @@ export function useCancelLeave() {
   return useMutation({
     mutationFn: (id: string) => api.delete<{ deleted?: boolean; ended?: boolean; endDate?: string }>(`/leaves/${id}`),
     onSuccess: () => invalidateTimeOff(qc),
+  });
+}
+
+export function useRevertJustification() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<Justification>(`/justifications/${id}/revert`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.justificationsAll });
+      void qc.invalidateQueries({ queryKey: ['reports'] });
+      void qc.invalidateQueries({ queryKey: qk.today });
+    },
   });
 }

@@ -75,6 +75,10 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       const about = j.attendance
         ? `la marcación de las ${formatTime(j.attendance.timestamp)}`
         : `la ausencia del ${j.date ? formatDayKey(j.date) : 'día'}`;
+      if (j.status === 'PENDING') {
+        toast.info('Justificación en revisión', `Tu solicitud sobre ${about} volvió a revisión.`);
+        return;
+      }
       const msg = `Tu solicitud sobre ${about} fue ${label}.`;
       const note = j.reviewNote ? ` Nota: “${j.reviewNote}”` : '';
       if (j.status === 'APPROVED') toast.success('Justificación aprobada', msg + note);

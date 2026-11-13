@@ -116,6 +116,8 @@ export interface MarkRecord {
   isLate: boolean;
   lateMinutes: number;
   preEntryMinutes: number;
+  source?: 'WEB' | 'MANUAL';
+  creditedFrom?: string | null;
 }
 
 export interface WorkSession {
@@ -341,6 +343,8 @@ export interface ReportDay {
     lateMinutes: number;
     preEntryMinutes: number;
     justified: boolean;
+    manual: boolean;
+    creditedFrom: string | null;
   }[];
 }
 

@@ -18,6 +18,7 @@ export const formatDayKey = (key: string) => capitalize(dateShortFmt.format(dayK
 
 const toDayKey = (d: Date) => isoDateFmt.format(d);
 export const todayKey = () => toDayKey(new Date());
+export const dayKeyOf = (d: string | Date) => toDayKey(new Date(d));
 export const currentMonth = () => todayKey().slice(0, 7);
 
 /** Mediodía local de ese día (sin ambigüedad de zona). Ecuador es UTC−5 fijo. */
@@ -86,4 +87,21 @@ export function daysUntil(key: string): number {
   const [y, m, d] = key.split('-').map(Number);
   const [ty, tm, td] = todayKey().split('-').map(Number);
   return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(ty, tm - 1, td)) / 86_400_000);
+}
+
+export function atDayTime(dayKey: string, hhmm: string): Date | null {
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(hhmm);
+  if (!m) return null;
+  const [y, mo, d] = dayKey.split('-').map(Number);
+  return new Date(Date.UTC(y, mo - 1, d, Number(m[1]) + 5, Number(m[2])));
+}
+
+export function exitAfter(inIso: string, hhmm: string): Date | null {
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(hhmm);
+  if (!m) return null;
+  const inAt = new Date(inIso);
+  const [y, mo, d] = toDayKey(inAt).split('-').map(Number);
+  const at = new Date(Date.UTC(y, mo - 1, d, Number(m[1]) + 5, Number(m[2])));
+  if (at <= inAt) at.setUTCDate(at.getUTCDate() + 1);
+  return at;
 }

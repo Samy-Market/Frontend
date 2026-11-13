@@ -350,7 +350,12 @@ export default function Reports() {
                                       <td className="py-1.5 pr-4 tabular-nums">{formatTime(d.firstIn)}</td>
                                       <td className="py-1.5 pr-4 tabular-nums">{formatTime(d.lastOut)}</td>
                                       <td className="py-1.5 pr-4 text-xs tabular-nums text-slate-600">
-                                        {d.marks.map((m) => `${m.type === 'IN' ? 'E' : 'S'} ${formatTime(m.timestamp)}`).join(' · ')}
+                                        {d.marks
+                                          .map(
+                                            (m) =>
+                                              `${m.type === 'IN' ? 'E' : 'S'} ${formatTime(m.timestamp)}${m.manual ? '*' : ''}${m.creditedFrom ? ` (cuenta desde ${formatTime(m.creditedFrom)})` : ''}`,
+                                          )
+                                          .join(' · ')}
                                       </td>
                                       <td className="py-1.5 pr-4 text-right tabular-nums">{formatMinutes(d.workedMinutes)}</td>
                                       <td className="py-1.5">
@@ -365,6 +370,8 @@ export default function Reports() {
                                           {d.absent && <Badge tone="red">Ausente</Badge>}
                                           {d.absenceJustified && <Badge tone="green">Ausencia justificada</Badge>}
                                           {d.dayOff && <Badge tone="green">{d.dayOff.label}</Badge>}
+                                          {d.marks.some((m) => m.manual) && <Badge tone="sky">* Registrada por el jefe</Badge>}
+                                          {d.marks.some((m) => m.creditedFrom) && <Badge tone="sky">Horas ajustadas por el jefe</Badge>}
                                           {!d.absent && d.plan.kind === 'REST' && <Badge tone="sky">Trabajó en descanso</Badge>}
                                         </div>
                                       </td>

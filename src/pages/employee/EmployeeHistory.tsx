@@ -155,6 +155,10 @@ export default function EmployeeHistory() {
                                 <span className={`h-2 w-2 rounded-full ${r.type === 'IN' ? 'bg-brand-700' : 'bg-ink'}`} aria-hidden />
                                 <span className="w-14 font-medium">{r.type === 'IN' ? 'Ingreso' : 'Salida'}</span>
                                 <span className="tabular-nums text-slate-700">{formatTime(r.timestamp)}</span>
+                                {r.source === 'MANUAL' && <span className="text-xs text-slate-500">registrada por tu jefe</span>}
+                                {r.creditedFrom && (
+                                  <span className="text-xs text-slate-500">cuenta desde {formatTime(r.creditedFrom)}</span>
+                                )}
                               </div>
                               {j ? (
                                 <Badge tone={justificationTone[j.status]}>Solicitud {justificationLabel[j.status].toLowerCase()}</Badge>

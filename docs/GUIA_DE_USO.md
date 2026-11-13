@@ -66,7 +66,7 @@ El puntito verde arriba a la derecha dice **"En vivo"**: la app está conectada 
 - Arriba: horas trabajadas, días trabajados, atrasos y **ausencias**.
 - Cada día muestra qué turno tenías, a qué hora entraste y saliste, y etiquetas como "Atraso 14 min", "Ausente" o "Jornada abierta" (cuando olvidaste marcar la salida).
 - Cada marcación tiene el botón **"Justificar"** para explicar qué pasó.
-- Los días de trabajo en los que **no marcaste nada** ("Ausente") también tienen **"Justificar"**, para explicar la falta (por ejemplo, una cita médica). Solo se puede en días que ya pasaron. Si el jefe la aprueba, el día pasa a **"Ausencia justificada"** y deja de contar como ausencia.
+- Los días de trabajo en los que **no marcaste nada** ("Ausente") también tienen **"Justificar"**: para explicar la falta (por ejemplo, una cita médica) o, si **viniste pero olvidaste marcar**, para escribir a qué hora entraste y saliste; tu jefe las registra al aprobar. Solo se puede en días que ya pasaron. Si el jefe la aprueba, el día pasa a **"Ausencia justificada"** y deja de contar como ausencia.
 
 ### 3. Solicitudes
 
@@ -146,8 +146,13 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 - Cada nota muestra quién la envió, qué marcación quiere justificar y el motivo.
 - **Aprobar** o **Rechazar**, con una nota opcional. El empleado recibe la respuesta al instante en su celular.
 - Una nota puede ser de una marcación (por ejemplo, un ingreso con atraso) o de una **ausencia** (un día de trabajo sin marcas).
-- **Si apruebas la justificación de una ausencia, ese día deja de contar como ausencia**: aparece como "Ausencia justificada" (en verde), no suma horas trabajadas y en el Excel tiene su propia columna, "Ausencias justificadas".
+- **Si apruebas la justificación de una ausencia**, la app pregunta **"¿Trabajó ese día?"**:
+  - **No trabajó (permiso):** deja de contar como ausencia y aparece como "Ausencia justificada" (en verde), sin horas. En el Excel tiene su propia columna, "Ausencias justificadas".
+  - **Sí trabajó, olvidó marcar:** escribes la hora de **ingreso** y de **salida** (vienen puestas las del turno). Se registran como **"registradas por el jefe"** (con \* en Reportes y Excel), el día cuenta como **trabajado** con sus horas, y si el ingreso es después de la tolerancia queda con su **atraso**, igual que si hubiera marcado. Si el turno es de noche, una salida menor que el ingreso es del día siguiente.
+- **Olvidó marcar la salida:** si la justificación es de un ingreso que quedó sin salida y **ya pasó la hora de salida de su turno** (mientras la jornada sigue en curso no aparece, porque todavía puede marcarla), al aprobarla aparece **"Registrar la salida que olvidó marcar"** con la hora de salida del turno ya puesta (se puede cambiar). La app muestra cuántas horas quedarán. La salida queda como **"registrada por el jefe"** (con un asterisco \* en Reportes y en el Excel) y esas horas **sí cuentan**. No puede ser antes del ingreso, en el futuro, después de su siguiente marcación ni de más de una jornada; si el turno es de noche y la hora es menor que la del ingreso, se toma el día siguiente.
 - **Si apruebas la justificación de un ingreso con atraso, ese atraso deja de contar**: no suma a los días ni a los minutos de atraso del reporte ni del Excel. Igual queda a la vista como "Atraso … justificado" (en verde), para que se sepa qué pasó. Rechazar o dejarla pendiente no cambia nada.
+- **Llegó a tiempo pero marcó tarde** (por ejemplo, atendió a un cliente antes de marcar): al aprobar un ingreso **que quedó con atraso** aparece **"Contar las horas desde la hora real de llegada"** (marcada por defecto; si llegó a tiempo no aparece), con la hora de inicio del turno ya puesta. La marca original **no cambia**; solo las horas se cuentan desde esa hora, así que se suman los minutos que faltaban. En Reportes se ve "E 08:13 (cuenta desde 08:00)". No puede ser antes del inicio del turno ni después de la hora en que marcó.
+- **Deshacer una decisión** (solo el administrador): en una justificación aprobada o rechazada, **"Deshacer decisión"** la devuelve a **Pendiente** y revierte lo que hizo la aprobación: borra las marcaciones que registró el jefe y quita el ajuste de hora de llegada. El atraso o la ausencia vuelven a contar hasta que se decida otra vez. Queda en la auditoría y el empleado recibe un aviso. No se puede si una de esas marcaciones del jefe tiene su propia justificación: primero hay que resolver esa.
 
 ### Feriados y permisos
 
