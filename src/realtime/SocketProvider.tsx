@@ -70,6 +70,12 @@ export function SocketProvider({ children }: { children: ReactNode }) {
 
     s.on('justification:reviewed', (j: Justification) => {
       void qc.invalidateQueries({ queryKey: qk.justificationsAll });
+      if (admin) {
+        void qc.invalidateQueries({ queryKey: qk.today });
+        void qc.invalidateQueries({ queryKey: ['reports'] });
+      }
+      if (j.employeeId !== myEmployeeId) return;
+      void qc.invalidateQueries({ queryKey: qk.myStatus });
       void qc.invalidateQueries({ queryKey: qk.myMonthAll });
       const label = statusLabel[j.status];
       const about = j.attendance

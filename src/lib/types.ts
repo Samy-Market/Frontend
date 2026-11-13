@@ -42,6 +42,7 @@ export interface EmployeeDayStatus {
   openSession: boolean;
   isLate: boolean;
   lateMinutes: number;
+  lateJustified: boolean;
   missingAfterStart: boolean;
   todayPlan: DayPlan;
   todaySite: DaySite;

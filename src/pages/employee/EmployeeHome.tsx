@@ -213,6 +213,17 @@ export default function EmployeeHome() {
             Hoy ingresaste con <strong>{formatLate(s.lateMinutes)}</strong> de atraso. Puedes justificarlo desde el Historial.
           </p>
         )}
+        {s.lateJustified && (
+          <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            Tu atraso de hoy (<strong>{formatLate(s.lateMinutes)}</strong>) fue justificado.
+            {s.countingFrom && (
+              <>
+                {' '}
+                Tus horas se cuentan desde las <strong>{formatTime(s.countingFrom)}</strong>.
+              </>
+            )}
+          </p>
+        )}
         {s.missingAfterStart && shift && (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
             Tu hora de entrada era a las <strong>{shift.startTime}</strong> (tolerancia {shift.toleranceMinutes} min).

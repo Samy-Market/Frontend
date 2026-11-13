@@ -284,6 +284,7 @@ function Row({ item: i, highlighted }: { item: TodayItem; highlighted: boolean }
             <Badge tone="sky">Trabaja en {i.dayOff.kind === 'HOLIDAY' ? 'feriado' : 'permiso'}</Badge>
           )}
           {i.isLate && <Badge tone="red">Atraso {formatLate(i.lateMinutes)}</Badge>}
+          {i.lateJustified && <Badge tone="green">Atraso {formatLate(i.lateMinutes)} justificado</Badge>}
           {i.preEntryMinutesToday > 0 && <Badge tone="sky">Preingreso {formatLate(i.preEntryMinutesToday)}</Badge>}
         </div>
       </td>
