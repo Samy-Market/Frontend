@@ -173,7 +173,8 @@ Es como **armar un equipo de fútbol**: primero la cancha (sedes), luego los hor
 - **"Exportar mes a Excel"**: se elige el mes y se descarga un archivo con:
   - **Resumen**: una fila por colaborador con sus totales del mes. El nombre lleva a su hoja.
   - **Una hoja por colaborador**, con todos los días del mes hasta hoy: turno, ingreso, salida, horas trabajadas, atraso y horas suplementarias (en horas:minutos), más una observación ("No marcó", "Descanso", "Preingreso 5 min"…). Los días que no marcó aparecen con 0.
-- **Horas suplementarias**: el tiempo trabajado después de la hora de salida del turno. En un día de descanso, todo lo trabajado cuenta como suplementario.
+- **Horas trabajadas**: son netas. En jornadas de más de 4 horas se descuenta 1 hora de almuerzo; si la persona marcó salida y regreso del almuerzo, ese tiempo ya no cuenta y no se descuenta otra vez. Ejemplo: de 08:00 a 17:00 son 8 horas.
+- **Horas suplementarias**: lo que pasa de 8 horas trabajadas en el día, contadas desde que ingresa. Ejemplo: si entra a las 08:00 y sale a las 19:00, son 2 horas suplementarias. En un día de descanso o feriado, todo lo trabajado cuenta como suplementario.
 
 ### Usuarios (solo el administrador)
 

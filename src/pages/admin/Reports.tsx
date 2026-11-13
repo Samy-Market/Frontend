@@ -363,6 +363,7 @@ export default function Reports() {
                                           {d.isLate && <Badge tone="red">Atraso {formatLate(d.lateMinutes)}</Badge>}
                                           {d.lateJustified && <Badge tone="green">Atraso {formatLate(d.lateMinutes)} justificado</Badge>}
                                           {d.preEntryMinutes > 0 && <Badge tone="sky">Preingreso {formatLate(d.preEntryMinutes)}</Badge>}
+                                          {d.lunchMinutes > 0 && <Badge>Almuerzo {formatLate(d.lunchMinutes)}</Badge>}
                                           {d.overtimeMinutes > 0 && (
                                             <Badge tone="brand">Suplementarias {formatLate(d.overtimeMinutes)}</Badge>
                                           )}
@@ -391,6 +392,11 @@ export default function Reports() {
           )}
           <p className="mt-3 text-xs text-slate-500">
             Período {data.from} a {data.to} · {data.totals.marks} marcaciones · zona horaria {data.timezone}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Las horas son netas: en jornadas de más de {data.workday.dailyMinutes / 120} h se descuenta{' '}
+            {formatLate(data.workday.lunchMinutes)} de almuerzo (menos lo que ya salió entre marcas). Son suplementarias las que pasan de{' '}
+            {data.workday.dailyMinutes / 60} h en el día; en descanso o feriado, todas.
           </p>
         </div>
       ) : null}

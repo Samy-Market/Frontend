@@ -28,8 +28,9 @@ export default function EmployeeHome() {
   const inside = s?.status === 'INSIDE';
 
   const countFrom = Math.max(statusQ.dataUpdatedAt, s?.countingFrom ? new Date(s.countingFrom).getTime() : 0);
-  const liveMinutes =
-    s && inside ? s.workedMinutesToday + Math.max(0, Math.floor((now.getTime() - countFrom) / 60_000)) : (s?.workedMinutesToday ?? 0);
+  const elapsed = s && inside ? Math.max(0, Math.floor((now.getTime() - countFrom) / 60_000)) : 0;
+  const lunchRunning = s ? Math.min(s.lunch.pending, Math.max(0, elapsed - s.lunch.startsIn)) : 0;
+  const liveMinutes = (s?.workedMinutesToday ?? 0) + elapsed - lunchRunning;
 
   const busy = mark.isPending || locating;
 

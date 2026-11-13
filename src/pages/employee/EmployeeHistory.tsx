@@ -126,7 +126,9 @@ export default function EmployeeHistory() {
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-semibold tabular-nums">{formatMinutesShort(d.workedMinutes)}</p>
-                          <p className="text-xs text-slate-500">horas</p>
+                          <p className="text-xs text-slate-500">
+                            {d.lunchMinutes > 0 ? `horas · almuerzo ${formatLate(d.lunchMinutes)}` : 'horas'}
+                          </p>
                         </div>
                       </div>
                       {(d.absent || d.absenceJustified) && (

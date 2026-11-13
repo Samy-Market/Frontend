@@ -39,6 +39,7 @@ export interface EmployeeDayStatus {
   preEntryMinutesToday: number;
   countingFrom: string | null;
   workedMinutesToday: number;
+  lunch: { deducted: number; pending: number; startsIn: number };
   openSession: boolean;
   isLate: boolean;
   lateMinutes: number;
@@ -137,6 +138,7 @@ export interface DaySummary {
   preEntryMinutes: number;
   lastOut: string | null;
   workedMinutes: number;
+  lunchMinutes: number;
   sessions: WorkSession[];
   openSession: boolean;
   isLate: boolean;
@@ -326,6 +328,7 @@ export interface ReportDay {
   preEntryMinutes: number;
   lastOut: string | null;
   workedMinutes: number;
+  lunchMinutes: number;
   overtimeMinutes: number;
   isLate: boolean;
   lateMinutes: number;
@@ -360,6 +363,7 @@ export interface AttendanceReport {
   from: string;
   to: string;
   timezone: string;
+  workday: { dailyMinutes: number; lunchMinutes: number };
   generatedAt: string;
   totals: ReportTotals & { employees: number };
   site: SiteRef | null;
